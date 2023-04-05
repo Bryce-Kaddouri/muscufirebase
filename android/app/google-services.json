@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "938786366050",
+    "project_id": "muscu-759fb",
+    "storage_bucket": "muscu-759fb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:938786366050:android:c3052e5838b605c309e73b",
+        "android_client_info": {
+          "package_name": "com.example.muscucards"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "938786366050-4bq7f3orq64juaftjcrtnp3i7bdmslg1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYcKyC0qtXgOFIInab-s_I2YSJukgJ5JA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "938786366050-4bq7f3orq64juaftjcrtnp3i7bdmslg1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
