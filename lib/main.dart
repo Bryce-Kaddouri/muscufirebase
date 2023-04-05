@@ -331,6 +331,10 @@ class _FocusSeanceState extends State<FocusSeance> {
   final GlobalKey<FormState> _addFormKey = GlobalKey<FormState>();
   // controller for name field
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _nbRepController = TextEditingController();
+  final TextEditingController _poidsController = TextEditingController();
+  final TextEditingController _timerController = TextEditingController();
+
   User? user = FirebaseAuth.instance.currentUser;
 
   Future<bool> changeOrder(String idUser, String idSeance, String idExo,
@@ -504,6 +508,27 @@ class _FocusSeanceState extends State<FocusSeance> {
                           .doc(element.id)
                           .update({"index": ind});
                     });
+                  } else if (newIndex == 0) {
+                    print(newIndex);
+                    var test = snapshot.data!.docs
+                        .getRange(1, snapshot.data!.docs.length);
+                    var db = FirebaseFirestore.instance;
+                    final docRef = db
+                        .collection(widget.id)
+                        .doc(widget.idSeance)
+                        .collection('exos')
+                        .doc(snapshot.data!.docs[oldIndex].id)
+                        .update({"index": newIndex});
+
+                    test.forEach((element) {
+                      int ind = element.get('index') + 1;
+                      final docRef = db
+                          .collection(widget.id)
+                          .doc(widget.idSeance)
+                          .collection('exos')
+                          .doc(element.id)
+                          .update({"index": ind});
+                    });
                   } else {
                     print('descente');
                     var test = snapshot.data!.docs.getRange(oldIndex, newIndex);
@@ -529,33 +554,10 @@ class _FocusSeanceState extends State<FocusSeance> {
                 });
               },
             );
-            // ListView.builder(
-            //   itemCount: snapshot.data!.docs.length,
-            //   itemBuilder: (context, index) {
-            //     var doc = snapshot.data;
-            //     print('---------------------------------');
-            //     print(doc!.docs[index].data());
-            //     print('---------------------------------');
-
-            //     print(doc!.docs[index].data());
-            //     print(doc.docs[index].id);
-            //     print(doc.docs[index].get('titre'));
-
-            //     return ListTile(
-            //       onTap: () {
-            //         print(doc.docs[index].id);
-            //       },
-            //       title: Text(doc.docs[index].get('titre')),
-            //       subtitle: Text(
-            //         'date',
-            //       ),
-            //     );
-            //   },
-            // );
           },
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
+          onPressed: () async {
             showDialog(
               context: context,
               builder: (context) {
@@ -573,6 +575,24 @@ class _FocusSeanceState extends State<FocusSeance> {
                               labelText: 'Titre',
                             ),
                           ),
+                          TextFormField(
+                            controller: _nbRepController,
+                            decoration: InputDecoration(
+                              labelText: 'nb Rep',
+                            ),
+                          ),
+                          TextFormField(
+                            controller: _poidsController,
+                            decoration: InputDecoration(
+                              labelText: 'poids',
+                            ),
+                          ),
+                          TextFormField(
+                            controller: _timerController,
+                            decoration: InputDecoration(
+                              labelText: 'timer',
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -587,16 +607,42 @@ class _FocusSeanceState extends State<FocusSeance> {
                         onPressed: () async {
                           Navigator.pop(context);
                           var db = FirebaseFirestore.instance;
+                          String titre = _nameController.text;
+                          int nbRep = int.parse(_nbRepController.text);
+                          int poids = int.parse(_poidsController.text);
+
+                          // recup exos
+                          var exos = await db
+                              .collection(user!.uid)
+                              .doc(widget.idSeance)
+                              .collection('exos')
+                              .get();
+
+                          print('titre: ');
+                          print(titre);
+                          print('nbRep: ');
+                          print(nbRep);
+                          print('poids: ');
+                          print(poids);
+
+                          // var y = await db
+                          //     .collection(user!.uid)
+                          //     .doc(widget.id)
+                          //     .collection('exos')
+                          //     .count();
                           // get nb documents qui commence par seance
                           // ajouter 1
                           // ajouter le document
 
                           var t = await db
                               .collection(user!.uid)
-                              .doc(widget.id)
+                              .doc(widget.idSeance)
                               .collection('exos')
                               .add({
-                            'titre': _nameController.text,
+                            'titre': titre,
+                            'index': exos.size + 1,
+                            'nbRep': nbRep,
+                            'poids': poids,
                             'createdAt': Timestamp.now(),
                             'updatedAt': Timestamp.now(),
                           });
@@ -605,7 +651,7 @@ class _FocusSeanceState extends State<FocusSeance> {
                           print(t.toString());
 
                           int nb = 0;
-                          setState(() {});
+                          // setState(() {});
                         },
                         child: Text('Ajouter'))
                   ],
