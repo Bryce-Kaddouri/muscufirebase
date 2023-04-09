@@ -33,18 +33,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData.dark(),
       home: FutureBuilder(
         future: _getUser(),
         builder: (context, snapshot) {
@@ -334,7 +323,6 @@ class _FocusSeanceState extends State<FocusSeance> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _nbRepController = TextEditingController();
   final TextEditingController _poidsController = TextEditingController();
-  final TextEditingController _timerController = TextEditingController();
 
   User? user = FirebaseAuth.instance.currentUser;
 
@@ -575,12 +563,6 @@ class _FocusSeanceState extends State<FocusSeance> {
                             labelText: 'poids',
                           ),
                         ),
-                        TextFormField(
-                          controller: _timerController,
-                          decoration: InputDecoration(
-                            labelText: 'timer',
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -598,7 +580,6 @@ class _FocusSeanceState extends State<FocusSeance> {
                         String titre = _nameController.text;
                         int nbRep = int.parse(_nbRepController.text);
                         int poids = int.parse(_poidsController.text);
-                        int timer = int.parse(_timerController.text);
 
                         // recup exos
                         var exos = await db
@@ -623,7 +604,7 @@ class _FocusSeanceState extends State<FocusSeance> {
                           'index': exos.size + 1,
                           'nbRep': nbRep,
                           'poids': poids,
-                          'timer': timer,
+                          'timer': 0,
                           'createdAt': Timestamp.now(),
                           'updatedAt': Timestamp.now(),
                         });
@@ -654,6 +635,7 @@ class _FocusSeanceState extends State<FocusSeance> {
                 context,
                 MaterialPageRoute(
                     builder: (context) => Timer(
+                          timer: 5,
                           idUser: widget.id,
                           idSeance: widget.idSeance,
                         )),
@@ -728,30 +710,77 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
           List<Card> list = [];
 
           for (var i = 0; i < snapshot.data!.size; i++) {
-            print(snapshot.data!.docs.elementAt(i).data());
-            Card card = Card(
-              elevation: 4.0,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: <Widget>[
-                    Container(
-                      width: 250,
-                      height: 250,
-                      child: Text('test'),
-                    ),
-                    Text(
-                      'test',
-                      style: Theme.of(context).textTheme.headline5,
-                    ),
-                    OutlinedButton(
-                      child: const Text("Learn more"),
-                      onPressed: () => print("Button was tapped"),
-                    ),
-                  ],
+            var timer = snapshot.data!.docs.elementAt(i).get('timer');
+            var poids = snapshot.data!.docs.elementAt(i).get('poids');
+            var nbRep = snapshot.data!.docs.elementAt(i).get('nbRep');
+
+            print('timer: ');
+            print(nbRep);
+            // int? test = snapshot.data!.docs.elementAt(i).get('timer');
+
+            // print(test);
+            // print(snapshot.data!.docs.elementAt(i).data());
+            // var poids = snapshot.data!.docs.elementAt(i);
+            // print('timer: $poids');
+            late Card card;
+
+            if (timer == 0) {
+              card = Card(
+                color: Colors.white,
+                elevation: 4.0,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: <Widget>[
+                      Container(
+                        color: Colors.blue,
+                        width: 300,
+                        child: Text(
+                          snapshot.data!.docs.elementAt(i).get('titre'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.black, fontSize: 32),
+                        ),
+                      ),
+                      FlutterLogo(size: 300),
+                      Text(
+                        '$nbRep répétitions à $poids KG',
+                        style: TextStyle(color: Colors.black, fontSize: 24),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            );
+              );
+            } else {
+              card = Card(
+                color: Colors.white,
+                elevation: 4.0,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Container(
+                        color: Colors.blue,
+                        width: 300,
+                        child: Text(
+                          snapshot.data!.docs.elementAt(i).get('titre'),
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headline4,
+                        ),
+                      ),
+                      Container(
+                          width: 300,
+                          height: 300,
+                          child: CounterDown(
+                              idSeance: snapshot.data!.docs.elementAt(i).id,
+                              idUser: widget.idUser,
+                              timer: timer)),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             list.add(card);
           }
 
@@ -760,6 +789,7 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
 
           return StackedCardCarousel(
             onPageChanged: (pageIndex) {
+              print(pageIndex);
               controller.jumpToPage(pageIndex);
             },
             pageController: controller,
@@ -774,9 +804,14 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
 }
 
 class Timer extends StatefulWidget {
+  int timer;
   String idSeance;
   String idUser;
-  Timer({super.key, required this.idSeance, required this.idUser});
+  Timer(
+      {super.key,
+      required this.timer,
+      required this.idSeance,
+      required this.idUser});
 
   @override
   State<Timer> createState() => _TimerState();
@@ -791,7 +826,7 @@ class _TimerState extends State<Timer> {
       ),
       body: Center(
         child: CircularCountDownTimer(
-          duration: 5,
+          duration: widget.timer,
           initialDuration: 0,
           controller: CountDownController(),
           width: MediaQuery.of(context).size.width / 2,
@@ -834,6 +869,72 @@ class _TimerState extends State<Timer> {
             }
           },
         ),
+      ),
+    );
+  }
+}
+
+class CounterDown extends StatefulWidget {
+  int timer;
+  String idSeance;
+  String idUser;
+  CounterDown(
+      {super.key,
+      required this.timer,
+      required this.idSeance,
+      required this.idUser});
+
+  @override
+  State<CounterDown> createState() => _CounterDownState();
+}
+
+class _CounterDownState extends State<CounterDown> {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: CircularCountDownTimer(
+        duration: widget.timer,
+        initialDuration: 0,
+        controller: CountDownController(),
+        width: MediaQuery.of(context).size.width / 2,
+        height: MediaQuery.of(context).size.height / 2,
+        ringColor: Colors.grey[300]!,
+        ringGradient: null,
+        fillColor: Colors.purpleAccent[100]!,
+        fillGradient: null,
+        backgroundColor: Colors.purple[500],
+        backgroundGradient: null,
+        strokeWidth: 20.0,
+        strokeCap: StrokeCap.round,
+        textStyle: TextStyle(
+            fontSize: 33.0, color: Colors.white, fontWeight: FontWeight.bold),
+        textFormat: CountdownTextFormat.S,
+        isReverse: true,
+        isReverseAnimation: false,
+        isTimerTextShown: true,
+        autoStart: false,
+        onStart: () {
+          debugPrint('Countdown Started');
+        },
+        onComplete: () {
+          debugPrint('Countdown Ended');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => StartSeanceScreen(
+                    idSeance: widget.idSeance, idUser: widget.idUser)),
+          );
+        },
+        onChange: (String timeStamp) {
+          debugPrint('Countdown Changed $timeStamp');
+        },
+        timeFormatterFunction: (defaultFormatterFunction, duration) {
+          if (duration.inSeconds == 0) {
+            return "Lets Go!";
+          } else {
+            return Function.apply(defaultFormatterFunction, [duration]);
+          }
+        },
       ),
     );
   }
