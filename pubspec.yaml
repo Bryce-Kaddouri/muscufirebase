@@ -41,6 +41,8 @@ dependencies:
   cloud_firestore: ^4.5.0
   stacked_card_carousel: ^0.0.4
   circular_countdown_timer: ^0.2.3
+  text_to_speech: ^0.2.3
+  flutter_tts: ^3.6.3
 
 dev_dependencies:
   flutter_test:

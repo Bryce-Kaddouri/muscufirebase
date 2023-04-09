@@ -1,5 +1,7 @@
-import 'dart:convert';
-import 'dart:html';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:ui';
 import 'package:stacked_card_carousel/stacked_card_carousel.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -362,6 +364,10 @@ class _FocusSeanceState extends State<FocusSeance> {
     }
   }
 
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final TextEditingController min = TextEditingController();
+  final TextEditingController sec = TextEditingController();
+
   // function to get a document from firestore collection by id
   Stream<QuerySnapshot> getDocumentById(String idSeance, String idUser) {
     var db = FirebaseFirestore.instance;
@@ -409,129 +415,227 @@ class _FocusSeanceState extends State<FocusSeance> {
         ],
         title: Text(widget.nameSeance),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: getDocumentById(widget.idSeance, user!.uid),
-        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          if (snapshot.hasError) {
-            return Text('Something went wrong');
-          }
+      body: Column(children: [
+        Container(
+          width: double.infinity,
+          margin: EdgeInsets.symmetric(horizontal: 10),
+          alignment: Alignment.centerRight,
+          height: 40,
+          child: ElevatedButton.icon(
+              onPressed: () {
+                // global key
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Text("Loading");
-          }
-          print('exos: ');
-          print(snapshot.data!.docs.length);
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text('Ajouter un temps de repos'),
+                      content: Container(
+                        height: 200,
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: min,
+                              ),
+                              TextFormField(
+                                controller: sec,
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text('Annuler')),
+                        TextButton(
+                            onPressed: () async {
+                              int minS = int.parse(min.text);
+                              int secS = int.parse(sec.text);
+                              int totSec = 60 * minS + secS;
+                              Navigator.pop(context);
+                              var db = FirebaseFirestore.instance;
+                              String titre = "Repos";
+                              int nbRep = 0;
+                              int poids = 0;
 
-          return ReorderableListView(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            proxyDecorator: proxyDecorator,
-            children: <Widget>[
-              for (int index = 0;
-                  index < snapshot.data!.docs.length;
-                  index += 1)
-                ListTile(
-                  key: Key('$index'),
-                  title: Text(snapshot.data!.docs[index].get('titre')),
-                ),
-            ],
-            onReorder: (int oldIndex, int newIndex) {
-              setState(() {
-                // if (oldIndex < newIndex) {
-                //   newIndex -= 1;
-                // }
-                print('old');
-                print(oldIndex);
-                print('new');
+                              // recup exos
+                              var exos = await db
+                                  .collection(user!.uid)
+                                  .doc(widget.idSeance)
+                                  .collection('exos')
+                                  .get();
 
-                print(newIndex);
+                              print('titre: ');
+                              print(titre);
+                              print('nbRep: ');
+                              print(nbRep);
+                              print('poids: ');
+                              print(poids);
 
-                if (oldIndex > newIndex) {
-                  print('montee');
+                              var t = await db
+                                  .collection(user!.uid)
+                                  .doc(widget.idSeance)
+                                  .collection('exos')
+                                  .add({
+                                'titre': titre,
+                                'index': exos.size + 1,
+                                'nbRep': nbRep,
+                                'poids': poids,
+                                'timer': totSec,
+                                'createdAt': Timestamp.now(),
+                                'updatedAt': Timestamp.now(),
+                              });
 
-                  var test = snapshot.data!.docs.getRange(newIndex, oldIndex);
-                  test.forEach((element) {
-                    var db = FirebaseFirestore.instance;
-                    int ind = element.get('index') + 1;
-                    final docRef = db
-                        .collection(widget.id)
-                        .doc(widget.idSeance)
-                        .collection('exos')
-                        .doc(element.id)
-                        .update({"index": ind});
+                              print('---------------------------------');
+                              print(t.toString());
 
-                    print('--------');
-                    print('index :');
-                    print(element.get('index'));
-                    print(element.id);
-                    print('--------');
+                              int nb = 0;
+                              // setState(() {});
+                            },
+                            child: Text('Ajouter'))
+                      ],
+                    );
+                  },
+                );
+              },
+              icon: Icon(Icons.add),
+              label: Text('Repos')),
+        ),
+        Container(
+          height: MediaQuery.of(context).size.height - 160,
+          child: StreamBuilder<QuerySnapshot>(
+            stream: getDocumentById(widget.idSeance, user!.uid),
+            builder:
+                (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+              if (snapshot.hasError) {
+                return Text('Something went wrong');
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Text("Loading");
+              }
+              print('exos: ');
+              print(snapshot.data!.docs.length);
+
+              return ReorderableListView(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                proxyDecorator: proxyDecorator,
+                children: <Widget>[
+                  for (int index = 0;
+                      index < snapshot.data!.docs.length;
+                      index += 1)
+                    ListTile(
+                      key: Key('$index'),
+                      title: Text(snapshot.data!.docs[index].get('titre')),
+                    ),
+                ],
+                onReorder: (int oldIndex, int newIndex) {
+                  setState(() {
+                    // if (oldIndex < newIndex) {
+                    //   newIndex -= 1;
+                    // }
+                    print('old');
+                    print(oldIndex);
+                    print('new');
+
+                    print(newIndex);
+
+                    if (oldIndex > newIndex) {
+                      print('montee');
+
+                      var test =
+                          snapshot.data!.docs.getRange(newIndex, oldIndex);
+                      test.forEach((element) {
+                        var db = FirebaseFirestore.instance;
+                        int ind = element.get('index') + 1;
+                        final docRef = db
+                            .collection(widget.id)
+                            .doc(widget.idSeance)
+                            .collection('exos')
+                            .doc(element.id)
+                            .update({"index": ind});
+
+                        print('--------');
+                        print('index :');
+                        print(element.get('index'));
+                        print(element.id);
+                        print('--------');
+                      });
+                    } else if (newIndex == snapshot.data!.docs.length) {
+                      var test = snapshot.data!.docs.getRange(0, newIndex);
+                      var db = FirebaseFirestore.instance;
+                      final docRef = db
+                          .collection(widget.id)
+                          .doc(widget.idSeance)
+                          .collection('exos')
+                          .doc(snapshot.data!.docs[oldIndex].id)
+                          .update({"index": newIndex});
+
+                      test.forEach((element) {
+                        int ind = element.get('index') - 1;
+                        final docRef = db
+                            .collection(widget.id)
+                            .doc(widget.idSeance)
+                            .collection('exos')
+                            .doc(element.id)
+                            .update({"index": ind});
+                      });
+                    } else if (newIndex == 0) {
+                      print(newIndex);
+                      var test = snapshot.data!.docs
+                          .getRange(1, snapshot.data!.docs.length);
+                      var db = FirebaseFirestore.instance;
+                      final docRef = db
+                          .collection(widget.id)
+                          .doc(widget.idSeance)
+                          .collection('exos')
+                          .doc(snapshot.data!.docs[oldIndex].id)
+                          .update({"index": newIndex});
+
+                      test.forEach((element) {
+                        int ind = element.get('index') + 1;
+                        final docRef = db
+                            .collection(widget.id)
+                            .doc(widget.idSeance)
+                            .collection('exos')
+                            .doc(element.id)
+                            .update({"index": ind});
+                      });
+                    } else {
+                      print('descente');
+                      var test =
+                          snapshot.data!.docs.getRange(oldIndex, newIndex);
+                      test.forEach((element) {
+                        var db = FirebaseFirestore.instance;
+                        int ind = element.get('index') - 1;
+                        final docRef = db
+                            .collection(widget.id)
+                            .doc(widget.idSeance)
+                            .collection('exos')
+                            .doc(element.id)
+                            .update({"index": ind});
+                      });
+                    }
+                    int ind = 0;
+                    // while (ind < )
+                    print(snapshot.data!.docs[oldIndex].id);
+                    changeOrder(widget.id, widget.idSeance,
+                        snapshot.data!.docs[oldIndex].id, newIndex, oldIndex);
+
+                    // final int item = _items.removeAt(oldIndex);
+                    // _items.insert(newIndex, item);
                   });
-                } else if (newIndex == snapshot.data!.docs.length) {
-                  var test = snapshot.data!.docs.getRange(0, newIndex);
-                  var db = FirebaseFirestore.instance;
-                  final docRef = db
-                      .collection(widget.id)
-                      .doc(widget.idSeance)
-                      .collection('exos')
-                      .doc(snapshot.data!.docs[oldIndex].id)
-                      .update({"index": newIndex});
-
-                  test.forEach((element) {
-                    int ind = element.get('index') - 1;
-                    final docRef = db
-                        .collection(widget.id)
-                        .doc(widget.idSeance)
-                        .collection('exos')
-                        .doc(element.id)
-                        .update({"index": ind});
-                  });
-                } else if (newIndex == 0) {
-                  print(newIndex);
-                  var test = snapshot.data!.docs
-                      .getRange(1, snapshot.data!.docs.length);
-                  var db = FirebaseFirestore.instance;
-                  final docRef = db
-                      .collection(widget.id)
-                      .doc(widget.idSeance)
-                      .collection('exos')
-                      .doc(snapshot.data!.docs[oldIndex].id)
-                      .update({"index": newIndex});
-
-                  test.forEach((element) {
-                    int ind = element.get('index') + 1;
-                    final docRef = db
-                        .collection(widget.id)
-                        .doc(widget.idSeance)
-                        .collection('exos')
-                        .doc(element.id)
-                        .update({"index": ind});
-                  });
-                } else {
-                  print('descente');
-                  var test = snapshot.data!.docs.getRange(oldIndex, newIndex);
-                  test.forEach((element) {
-                    var db = FirebaseFirestore.instance;
-                    int ind = element.get('index') - 1;
-                    final docRef = db
-                        .collection(widget.id)
-                        .doc(widget.idSeance)
-                        .collection('exos')
-                        .doc(element.id)
-                        .update({"index": ind});
-                  });
-                }
-                int ind = 0;
-                // while (ind < )
-                print(snapshot.data!.docs[oldIndex].id);
-                changeOrder(widget.id, widget.idSeance,
-                    snapshot.data!.docs[oldIndex].id, newIndex, oldIndex);
-
-                // final int item = _items.removeAt(oldIndex);
-                // _items.insert(newIndex, item);
-              });
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
+        ),
+      ]),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           showDialog(
@@ -663,6 +767,8 @@ class _FocusSeanceState extends State<FocusSeance> {
   }
 }
 
+enum TtsState { playing, stopped, paused, continued }
+
 class StartSeanceScreen extends StatefulWidget {
   String idSeance;
   String idUser;
@@ -673,6 +779,27 @@ class StartSeanceScreen extends StatefulWidget {
 }
 
 class _StartSeanceScreenState extends State<StartSeanceScreen> {
+  String? language;
+  String? engine;
+  double volume = 1.0;
+  double pitch = 1.0;
+  double rate = 0.8;
+  bool isCurrentLanguageInstalled = false;
+
+  TtsState ttsState = TtsState.stopped;
+
+  get isPlaying => ttsState == TtsState.playing;
+  get isStopped => ttsState == TtsState.stopped;
+  get isPaused => ttsState == TtsState.paused;
+  get isContinued => ttsState == TtsState.continued;
+
+  bool get isIOS => !kIsWeb && Platform.isIOS;
+  bool get isAndroid => !kIsWeb && Platform.isAndroid;
+  bool get isWindows => !kIsWeb && Platform.isWindows;
+  bool get isWeb => kIsWeb;
+
+  FlutterTts flutterTts = FlutterTts();
+
   Stream<QuerySnapshot> getDocumentById(String idSeance, String idUser) {
     var db = FirebaseFirestore.instance;
     final docRef = db
@@ -685,6 +812,14 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
     return docRef;
   }
 
+  Future speak(String text) async {
+    await flutterTts.setVolume(volume);
+    await flutterTts.setSpeechRate(rate);
+    await flutterTts.setPitch(pitch);
+
+    await flutterTts.speak(text);
+  }
+
   final int _duration = 10;
 
   int currentCard = 0;
@@ -693,6 +828,75 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
   int nb = 0;
   List<Card> list = [];
   PageController controller = PageController();
+
+  initTts() {
+    flutterTts = FlutterTts();
+
+    // _setAwaitOptions();
+
+    if (isAndroid) {
+      // _getDefaultEngine();
+      // _getDefaultVoice();
+    }
+
+    flutterTts.setStartHandler(() {
+      setState(() {
+        print("Playing");
+        ttsState = TtsState.playing;
+      });
+    });
+
+    if (isAndroid) {
+      flutterTts.setInitHandler(() {
+        setState(() {
+          print("TTS Initialized");
+        });
+      });
+    }
+
+    flutterTts.setCompletionHandler(() {
+      setState(() {
+        print("Complete");
+        ttsState = TtsState.stopped;
+      });
+    });
+
+    flutterTts.setCancelHandler(() {
+      setState(() {
+        print("Cancel");
+        ttsState = TtsState.stopped;
+      });
+    });
+
+    flutterTts.setPauseHandler(() {
+      setState(() {
+        print("Paused");
+        ttsState = TtsState.paused;
+      });
+    });
+
+    flutterTts.setContinueHandler(() {
+      setState(() {
+        print("Continued");
+        ttsState = TtsState.continued;
+      });
+    });
+
+    flutterTts.setErrorHandler((msg) {
+      setState(() {
+        print("error: $msg");
+        ttsState = TtsState.stopped;
+      });
+    });
+  }
+
+  @override
+  initState() {
+    super.initState();
+
+    // speak();
+    // initTts();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -719,44 +923,6 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
               snapshot.data!.docs.toList().map((e) => e.data()).toList();
           print('test size');
           print(tets.length);
-          Card cardFin = Card(
-            color: Colors.white,
-            elevation: 4.0,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    color: Colors.blue,
-                    child: Text(
-                      'Bravo',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.black, fontSize: 32),
-                    ),
-                  ),
-                  Image.network(
-                    'https://media0.giphy.com/media/9xt1MUZqkneFiWrAAD/giphy.gif?cid=ecf05e478kqf3lmrssguqejzdmbqruvsh4poex85dmupjk3d&rid=giphy.gif&ct=g',
-                    width: 300,
-                    height: 300,
-                  ),
-                  Text(
-                    'Vous avez terminé votre séance',
-                    style: TextStyle(color: Colors.black, fontSize: 16),
-                  ),
-                  ButtonBar(
-                    alignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: Text('Retour')),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
 
           tets.forEach((element) {
             print('test forEach');
@@ -822,11 +988,37 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                         height: 300,
                         child: CounterDown(
                             onComplete: () {
-                              if (nextPage < tets.length) {
+                              int size = controllerTimer.length;
+                              print('size');
+                              print(nextPage);
+                              if (nextPage < size - 1) {
                                 controller.nextPage(
                                     duration: Duration(seconds: 1),
                                     curve: Curves.ease);
                                 nextPage++;
+                              } else {
+                                print('last');
+                                // speak(
+                                //     'Bravo ! Vous avec terminé cette séance !');
+                                showDialog(
+                                    barrierDismissible: false,
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text('Bravo'),
+                                        content: Text(
+                                            'Vous avez terminé votre séance'),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text('Retour'))
+                                        ],
+                                      );
+                                    });
                               }
                               // controller.nextPage(
                               //     duration: Duration(seconds: 1),
@@ -844,12 +1036,12 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                   ),
                 ),
               );
+
               // nb++;
               indexList++;
             }
             list.add(card);
           });
-          list.add(cardFin);
 
           // ListWheelScrollView itemExtent: 500,
 
@@ -858,6 +1050,7 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
             onPageChanged: (pageIndex) {
               int nbTimerPrevious = 0;
               var docs = snapshot.data!.docs;
+
               for (var i = 0; i < pageIndex; i++) {
                 if (docs.elementAt(i)['timer'] != 0) {
                   // controllerTimer.elementAt(i).pause();
@@ -866,10 +1059,16 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
               }
 
               if (docs.elementAt(pageIndex)['timer'] != 0) {
+                speak('${docs.elementAt(pageIndex)['timer']} secondes de repos')
+                    .then((value) {
+                  controllerTimer.elementAt(nbTimerPrevious).start();
+                });
                 print('nbTimerPrevious');
+
                 print(nbTimerPrevious);
-                controllerTimer.elementAt(nbTimerPrevious).start();
               } else {
+                speak(
+                    '${docs.elementAt(pageIndex)['titre']}, ${docs.elementAt(pageIndex)['nbRep']} répétitions à ${docs.elementAt(pageIndex)['poids']} Kilo');
                 print('nbTimerPrevious');
                 print(nbTimerPrevious);
                 controllerTimer.elementAt(nbTimerPrevious).pause();
