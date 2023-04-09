@@ -686,7 +686,13 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
   }
 
   final int _duration = 10;
-  final CountDownController _controller = CountDownController();
+
+  int currentCard = 0;
+  List<CountDownController> controllerTimer = [];
+  var nextPage = 1;
+  int nb = 0;
+  List<Card> list = [];
+  PageController controller = PageController();
 
   @override
   Widget build(BuildContext context) {
@@ -707,21 +713,62 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
             return Text("Loading");
           }
 
-          List<Card> list = [];
+          var indexList = 0;
 
-          for (var i = 0; i < snapshot.data!.size; i++) {
-            var timer = snapshot.data!.docs.elementAt(i).get('timer');
-            var poids = snapshot.data!.docs.elementAt(i).get('poids');
-            var nbRep = snapshot.data!.docs.elementAt(i).get('nbRep');
+          List tets =
+              snapshot.data!.docs.toList().map((e) => e.data()).toList();
+          print('test size');
+          print(tets.length);
+          Card cardFin = Card(
+            color: Colors.white,
+            elevation: 4.0,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    color: Colors.blue,
+                    child: Text(
+                      'Bravo',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black, fontSize: 32),
+                    ),
+                  ),
+                  Image.network(
+                    'https://media0.giphy.com/media/9xt1MUZqkneFiWrAAD/giphy.gif?cid=ecf05e478kqf3lmrssguqejzdmbqruvsh4poex85dmupjk3d&rid=giphy.gif&ct=g',
+                    width: 300,
+                    height: 300,
+                  ),
+                  Text(
+                    'Vous avez terminé votre séance',
+                    style: TextStyle(color: Colors.black, fontSize: 16),
+                  ),
+                  ButtonBar(
+                    alignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text('Retour')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
 
-            print('timer: ');
-            print(nbRep);
-            // int? test = snapshot.data!.docs.elementAt(i).get('timer');
+          tets.forEach((element) {
+            print('test forEach');
+            print(element);
+            var titre = element['titre'];
+            // var id = element['id'];
 
-            // print(test);
-            // print(snapshot.data!.docs.elementAt(i).data());
-            // var poids = snapshot.data!.docs.elementAt(i);
-            // print('timer: $poids');
+            var timer = element['timer'];
+            var poids = element['poids'];
+            var nbRep = element['nbRep'];
+            // card de fin avec un gif animé de trophe
+
             late Card card;
 
             if (timer == 0) {
@@ -736,7 +783,7 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                         color: Colors.blue,
                         width: 300,
                         child: Text(
-                          snapshot.data!.docs.elementAt(i).get('titre'),
+                          titre,
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.black, fontSize: 32),
                         ),
@@ -751,6 +798,8 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                 ),
               );
             } else {
+              controllerTimer.add(CountDownController());
+
               card = Card(
                 color: Colors.white,
                 elevation: 4.0,
@@ -763,34 +812,73 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                         color: Colors.blue,
                         width: 300,
                         child: Text(
-                          snapshot.data!.docs.elementAt(i).get('titre'),
+                          titre,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headline4,
                         ),
                       ),
                       Container(
-                          width: 300,
-                          height: 300,
-                          child: CounterDown(
-                              idSeance: snapshot.data!.docs.elementAt(i).id,
-                              idUser: widget.idUser,
-                              timer: timer)),
+                        width: 300,
+                        height: 300,
+                        child: CounterDown(
+                            onComplete: () {
+                              if (nextPage < tets.length) {
+                                controller.nextPage(
+                                    duration: Duration(seconds: 1),
+                                    curve: Curves.ease);
+                                nextPage++;
+                              }
+                              // controller.nextPage(
+                              //     duration: Duration(seconds: 1),
+                              //     curve: Curves.ease);
+                            },
+                            idCard: 1,
+                            currentPage: currentCard,
+                            autoStart: false,
+                            controller: controllerTimer[indexList],
+                            idSeance: '',
+                            idUser: widget.idUser,
+                            timer: timer),
+                      ),
                     ],
                   ),
                 ),
               );
+              // nb++;
+              indexList++;
             }
-
             list.add(card);
-          }
+          });
+          list.add(cardFin);
 
-          PageController controller = PageController();
           // ListWheelScrollView itemExtent: 500,
 
           return StackedCardCarousel(
+            type: StackedCardCarouselType.cardsStack,
             onPageChanged: (pageIndex) {
-              print(pageIndex);
-              controller.jumpToPage(pageIndex);
+              int nbTimerPrevious = 0;
+              var docs = snapshot.data!.docs;
+              for (var i = 0; i < pageIndex; i++) {
+                if (docs.elementAt(i)['timer'] != 0) {
+                  // controllerTimer.elementAt(i).pause();
+                  nbTimerPrevious++;
+                }
+              }
+
+              if (docs.elementAt(pageIndex)['timer'] != 0) {
+                print('nbTimerPrevious');
+                print(nbTimerPrevious);
+                controllerTimer.elementAt(nbTimerPrevious).start();
+              } else {
+                print('nbTimerPrevious');
+                print(nbTimerPrevious);
+                controllerTimer.elementAt(nbTimerPrevious).pause();
+              }
+
+              print('nbTimerPrevious');
+              print(nbTimerPrevious);
+
+              currentCard = pageIndex;
             },
             pageController: controller,
             items: list,
@@ -875,14 +963,24 @@ class _TimerState extends State<Timer> {
 }
 
 class CounterDown extends StatefulWidget {
+  Function onComplete;
+  bool autoStart;
+  CountDownController controller;
   int timer;
+  int idCard;
   String idSeance;
   String idUser;
+  int currentPage;
   CounterDown(
       {super.key,
+      required this.idCard,
       required this.timer,
       required this.idSeance,
-      required this.idUser});
+      required this.idUser,
+      required this.controller,
+      required this.autoStart,
+      required this.currentPage,
+      required this.onComplete});
 
   @override
   State<CounterDown> createState() => _CounterDownState();
@@ -890,12 +988,21 @@ class CounterDown extends StatefulWidget {
 
 class _CounterDownState extends State<CounterDown> {
   @override
+  void initState() {
+    super.initState();
+    if (widget.autoStart) {
+      widget.controller.start();
+    }
+    // widget.controller.start();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Center(
       child: CircularCountDownTimer(
         duration: widget.timer,
         initialDuration: 0,
-        controller: CountDownController(),
+        controller: widget.controller,
         width: MediaQuery.of(context).size.width / 2,
         height: MediaQuery.of(context).size.height / 2,
         ringColor: Colors.grey[300]!,
@@ -912,18 +1019,18 @@ class _CounterDownState extends State<CounterDown> {
         isReverse: true,
         isReverseAnimation: false,
         isTimerTextShown: true,
-        autoStart: false,
+        autoStart: widget.autoStart,
         onStart: () {
           debugPrint('Countdown Started');
         },
         onComplete: () {
-          debugPrint('Countdown Ended');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => StartSeanceScreen(
-                    idSeance: widget.idSeance, idUser: widget.idUser)),
-          );
+          widget.onComplete();
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(
+          //       builder: (context) => StartSeanceScreen(
+          //           idSeance: widget.idSeance, idUser: widget.idUser)),
+          // );
         },
         onChange: (String timeStamp) {
           debugPrint('Countdown Changed $timeStamp');
