@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:muscucards/services/textToSpeach.dart';
 import 'dart:ui';
 import 'package:stacked_card_carousel/stacked_card_carousel.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -272,9 +273,6 @@ class _HomePageState extends State<HomePage> {
                       onPressed: () async {
                         Navigator.pop(context);
                         var db = FirebaseFirestore.instance;
-                        // get nb documents qui commence par seance
-                        // ajouter 1
-                        // ajouter le document
 
                         var t = await db
                             .collection("5dMzBRtLwNeCqScwT1yVuz0FGuG2")
@@ -453,51 +451,52 @@ class _FocusSeanceState extends State<FocusSeance> {
                             },
                             child: Text('Annuler')),
                         TextButton(
-                            onPressed: () async {
-                              int minS = int.parse(min.text);
-                              int secS = int.parse(sec.text);
-                              int totSec = 60 * minS + secS;
-                              Navigator.pop(context);
-                              var db = FirebaseFirestore.instance;
-                              String titre = "Repos";
-                              int nbRep = 0;
-                              int poids = 0;
+                          onPressed: () async {
+                            int minS = int.parse(min.text);
+                            int secS = int.parse(sec.text);
+                            int totSec = 60 * minS + secS;
+                            Navigator.pop(context);
+                            var db = FirebaseFirestore.instance;
+                            String titre = "Repos";
+                            int nbRep = 0;
+                            int poids = 0;
 
-                              // recup exos
-                              var exos = await db
-                                  .collection(user!.uid)
-                                  .doc(widget.idSeance)
-                                  .collection('exos')
-                                  .get();
+                            // recup exos
+                            var exos = await db
+                                .collection(user!.uid)
+                                .doc(widget.idSeance)
+                                .collection('exos')
+                                .get();
 
-                              print('titre: ');
-                              print(titre);
-                              print('nbRep: ');
-                              print(nbRep);
-                              print('poids: ');
-                              print(poids);
+                            print('titre: ');
+                            print(titre);
+                            print('nbRep: ');
+                            print(nbRep);
+                            print('poids: ');
+                            print(poids);
 
-                              var t = await db
-                                  .collection(user!.uid)
-                                  .doc(widget.idSeance)
-                                  .collection('exos')
-                                  .add({
-                                'titre': titre,
-                                'index': exos.size + 1,
-                                'nbRep': nbRep,
-                                'poids': poids,
-                                'timer': totSec,
-                                'createdAt': Timestamp.now(),
-                                'updatedAt': Timestamp.now(),
-                              });
+                            var t = await db
+                                .collection(user!.uid)
+                                .doc(widget.idSeance)
+                                .collection('exos')
+                                .add({
+                              'titre': titre,
+                              'index': exos.size + 1,
+                              'nbRep': nbRep,
+                              'poids': poids,
+                              'timer': totSec,
+                              'createdAt': Timestamp.now(),
+                              'updatedAt': Timestamp.now(),
+                            });
 
-                              print('---------------------------------');
-                              print(t.toString());
+                            print('---------------------------------');
+                            print(t.toString());
 
-                              int nb = 0;
-                              // setState(() {});
-                            },
-                            child: Text('Ajouter'))
+                            int nb = 0;
+                            // setState(() {});
+                          },
+                          child: Text('Ajouter'),
+                        ),
                       ],
                     );
                   },
@@ -517,23 +516,76 @@ class _FocusSeanceState extends State<FocusSeance> {
               }
 
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Text("Loading");
+                return Center(child: CircularProgressIndicator());
+              }
+
+              List<Widget> lstExos = [];
+              for (int index = 0;
+                  index < snapshot.data!.docs.length;
+                  index += 1) {
+                var date = snapshot.data!.docs[index].get('updatedAt');
+                var date2 = snapshot.data!.docs[index].get('createdAt');
+                // date au format jj-mm-aaaa hh:mm:ss
+                var date3 = date.toDate();
+                var date4 = date2.toDate();
+
+                lstExos.add(
+                  ListTile(
+                    tileColor: Colors.grey[900],
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    key: Key('$index'),
+                    title: Text(snapshot.data!.docs[index].get('titre'),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 24)),
+                    subtitle: Text('modifié le : ${date3.toString()}',
+                        style: TextStyle(fontSize: 12)),
+                    leading: IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text('Supprimer'),
+                              content: Text(
+                                  'Voulez-vous vraiment supprimer cet exercice ?'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Annuler')),
+                                TextButton(
+                                    onPressed: () async {
+                                      Navigator.pop(context);
+                                      var db = FirebaseFirestore.instance;
+                                      await db
+                                          .collection(user!.uid)
+                                          .doc(widget.idSeance)
+                                          .collection('exos')
+                                          .doc(snapshot.data!.docs[index].id)
+                                          .delete();
+                                      setState(() {});
+                                    },
+                                    child: Text('Supprimer'))
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                );
               }
               print('exos: ');
               print(snapshot.data!.docs.length);
 
               return ReorderableListView(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                 proxyDecorator: proxyDecorator,
-                children: <Widget>[
-                  for (int index = 0;
-                      index < snapshot.data!.docs.length;
-                      index += 1)
-                    ListTile(
-                      key: Key('$index'),
-                      title: Text(snapshot.data!.docs[index].get('titre')),
-                    ),
-                ],
+                children: lstExos,
                 onReorder: (int oldIndex, int newIndex) {
                   setState(() {
                     // if (oldIndex < newIndex) {
@@ -728,8 +780,11 @@ class _FocusSeanceState extends State<FocusSeance> {
         child: Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
-          currentIndex: 0,
-          selectedItemColor: Colors.amber[800],
+          currentIndex: 1,
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.white,
+          unselectedLabelStyle: TextStyle(color: Colors.white),
+          selectedLabelStyle: TextStyle(color: Colors.blue),
           onTap: (value) {
             final int _duration = 10;
             final CountDownController _controller = CountDownController();
@@ -754,8 +809,10 @@ class _FocusSeanceState extends State<FocusSeance> {
               label: 'Previous',
             ),
             BottomNavigationBarItem(
-              activeIcon: Icon(Icons.pause),
-              icon: Icon(Icons.play_arrow),
+              activeIcon: Icon(
+                Icons.play_arrow,
+              ),
+              icon: Icon(Icons.pause),
               label: 'Play',
             ),
             BottomNavigationBarItem(
@@ -779,27 +836,6 @@ class StartSeanceScreen extends StatefulWidget {
 }
 
 class _StartSeanceScreenState extends State<StartSeanceScreen> {
-  String? language;
-  String? engine;
-  double volume = 1.0;
-  double pitch = 1.0;
-  double rate = 0.8;
-  bool isCurrentLanguageInstalled = false;
-
-  TtsState ttsState = TtsState.stopped;
-
-  get isPlaying => ttsState == TtsState.playing;
-  get isStopped => ttsState == TtsState.stopped;
-  get isPaused => ttsState == TtsState.paused;
-  get isContinued => ttsState == TtsState.continued;
-
-  bool get isIOS => !kIsWeb && Platform.isIOS;
-  bool get isAndroid => !kIsWeb && Platform.isAndroid;
-  bool get isWindows => !kIsWeb && Platform.isWindows;
-  bool get isWeb => kIsWeb;
-
-  FlutterTts flutterTts = FlutterTts();
-
   Stream<QuerySnapshot> getDocumentById(String idSeance, String idUser) {
     var db = FirebaseFirestore.instance;
     final docRef = db
@@ -812,13 +848,13 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
     return docRef;
   }
 
-  Future speak(String text) async {
-    await flutterTts.setVolume(volume);
-    await flutterTts.setSpeechRate(rate);
-    await flutterTts.setPitch(pitch);
+  // Future speak(String text) async {
+  //   await flutterTts.setVolume(volume);
+  //   await flutterTts.setSpeechRate(rate);
+  //   await flutterTts.setPitch(pitch);
 
-    await flutterTts.speak(text);
-  }
+  //   await flutterTts.speak(text);
+  // }
 
   final int _duration = 10;
 
@@ -829,81 +865,24 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
   List<Card> list = [];
   PageController controller = PageController();
 
-  initTts() {
-    flutterTts = FlutterTts();
-
-    // _setAwaitOptions();
-
-    if (isAndroid) {
-      // _getDefaultEngine();
-      // _getDefaultVoice();
-    }
-
-    flutterTts.setStartHandler(() {
-      setState(() {
-        print("Playing");
-        ttsState = TtsState.playing;
-      });
-    });
-
-    if (isAndroid) {
-      flutterTts.setInitHandler(() {
-        setState(() {
-          print("TTS Initialized");
-        });
-      });
-    }
-
-    flutterTts.setCompletionHandler(() {
-      setState(() {
-        print("Complete");
-        ttsState = TtsState.stopped;
-      });
-    });
-
-    flutterTts.setCancelHandler(() {
-      setState(() {
-        print("Cancel");
-        ttsState = TtsState.stopped;
-      });
-    });
-
-    flutterTts.setPauseHandler(() {
-      setState(() {
-        print("Paused");
-        ttsState = TtsState.paused;
-      });
-    });
-
-    flutterTts.setContinueHandler(() {
-      setState(() {
-        print("Continued");
-        ttsState = TtsState.continued;
-      });
-    });
-
-    flutterTts.setErrorHandler((msg) {
-      setState(() {
-        print("error: $msg");
-        ttsState = TtsState.stopped;
-      });
-    });
-  }
-
   @override
   initState() {
     super.initState();
-
-    // speak();
-    // initTts();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Start Seance'),
-      ),
+          title: Text('Start Seance'),
+          // back return on FocusSeance
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              icon: Icon(Icons.arrow_back_ios))),
       body: StreamBuilder<QuerySnapshot>(
         stream: getDocumentById(widget.idSeance, widget.idUser),
         builder: (context, snapshot) {
@@ -928,12 +907,10 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
             print('test forEach');
             print(element);
             var titre = element['titre'];
-            // var id = element['id'];
 
             var timer = element['timer'];
             var poids = element['poids'];
             var nbRep = element['nbRep'];
-            // card de fin avec un gif animé de trophe
 
             late Card card;
 
@@ -1020,9 +997,6 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                                       );
                                     });
                               }
-                              // controller.nextPage(
-                              //     duration: Duration(seconds: 1),
-                              //     curve: Curves.ease);
                             },
                             idCard: 1,
                             currentPage: currentCard,
@@ -1043,8 +1017,6 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
             list.add(card);
           });
 
-          // ListWheelScrollView itemExtent: 500,
-
           return StackedCardCarousel(
             type: StackedCardCarouselType.cardsStack,
             onPageChanged: (pageIndex) {
@@ -1053,13 +1025,14 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
 
               for (var i = 0; i < pageIndex; i++) {
                 if (docs.elementAt(i)['timer'] != 0) {
-                  // controllerTimer.elementAt(i).pause();
                   nbTimerPrevious++;
                 }
               }
 
               if (docs.elementAt(pageIndex)['timer'] != 0) {
-                speak('${docs.elementAt(pageIndex)['timer']} secondes de repos')
+                TextToSpeach()
+                    .speak(
+                        '${docs.elementAt(pageIndex)['timer']} secondes de repos')
                     .then((value) {
                   controllerTimer.elementAt(nbTimerPrevious).start();
                 });
@@ -1067,15 +1040,12 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
 
                 print(nbTimerPrevious);
               } else {
-                speak(
+                TextToSpeach().speak(
                     '${docs.elementAt(pageIndex)['titre']}, ${docs.elementAt(pageIndex)['nbRep']} répétitions à ${docs.elementAt(pageIndex)['poids']} Kilo');
                 print('nbTimerPrevious');
                 print(nbTimerPrevious);
                 controllerTimer.elementAt(nbTimerPrevious).pause();
               }
-
-              print('nbTimerPrevious');
-              print(nbTimerPrevious);
 
               currentCard = pageIndex;
             },
@@ -1111,51 +1081,69 @@ class _TimerState extends State<Timer> {
       appBar: AppBar(
         title: Text('timer'),
       ),
-      body: Center(
-        child: CircularCountDownTimer(
-          duration: widget.timer,
-          initialDuration: 0,
-          controller: CountDownController(),
-          width: MediaQuery.of(context).size.width / 2,
-          height: MediaQuery.of(context).size.height / 2,
-          ringColor: Colors.grey[300]!,
-          ringGradient: null,
-          fillColor: Colors.purpleAccent[100]!,
-          fillGradient: null,
-          backgroundColor: Colors.purple[500],
-          backgroundGradient: null,
-          strokeWidth: 20.0,
-          strokeCap: StrokeCap.round,
-          textStyle: TextStyle(
-              fontSize: 33.0, color: Colors.white, fontWeight: FontWeight.bold),
-          textFormat: CountdownTextFormat.S,
-          isReverse: true,
-          isReverseAnimation: false,
-          isTimerTextShown: true,
-          autoStart: true,
-          onStart: () {
-            debugPrint('Countdown Started');
-          },
-          onComplete: () {
-            debugPrint('Countdown Ended');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => StartSeanceScreen(
-                      idSeance: widget.idSeance, idUser: widget.idUser)),
-            );
-          },
-          onChange: (String timeStamp) {
-            debugPrint('Countdown Changed $timeStamp');
-          },
-          timeFormatterFunction: (defaultFormatterFunction, duration) {
-            if (duration.inSeconds == 0) {
-              return "Lets Go!";
-            } else {
-              return Function.apply(defaultFormatterFunction, [duration]);
-            }
-          },
-        ),
+      body: Column(
+        children: [
+          Container(
+            height: 120,
+            child: Center(
+              child: Text(
+                'La séance commence dans :',
+                style: TextStyle(fontSize: 30),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          Center(
+            child: CircularCountDownTimer(
+              duration: widget.timer,
+              initialDuration: 0,
+              controller: CountDownController(),
+              width: MediaQuery.of(context).size.width / 2,
+              height: MediaQuery.of(context).size.height / 2,
+              ringColor: Colors.grey[300]!,
+              ringGradient: null,
+              fillColor: Colors.purpleAccent[100]!,
+              fillGradient: null,
+              backgroundColor: Colors.purple[500],
+              backgroundGradient: null,
+              strokeWidth: 20.0,
+              strokeCap: StrokeCap.round,
+              textStyle: TextStyle(
+                  fontSize: 33.0,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold),
+              textFormat: CountdownTextFormat.S,
+              isReverse: true,
+              isReverseAnimation: false,
+              isTimerTextShown: true,
+              autoStart: true,
+              onStart: () {
+                debugPrint('Countdown Started');
+                TextToSpeach().speak('5... 4... 3... 2... 1...');
+              },
+              onComplete: () {
+                debugPrint('Countdown Ended');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => StartSeanceScreen(
+                          idSeance: widget.idSeance, idUser: widget.idUser)),
+                );
+              },
+              onChange: (String timeStamp) {
+                print(timeStamp);
+                debugPrint('Countdown Changed $timeStamp');
+              },
+              timeFormatterFunction: (defaultFormatterFunction, duration) {
+                if (duration.inSeconds == 0) {
+                  return "Lets Go!";
+                } else {
+                  return Function.apply(defaultFormatterFunction, [duration]);
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1223,7 +1211,10 @@ class _CounterDownState extends State<CounterDown> {
           debugPrint('Countdown Started');
         },
         onComplete: () {
-          widget.onComplete();
+          TextToSpeach().speak('Repos terminé').whenComplete(() {
+            widget.onComplete();
+          });
+
           // Navigator.push(
           //   context,
           //   MaterialPageRoute(
