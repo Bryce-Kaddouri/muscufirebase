@@ -216,9 +216,7 @@ class _SeancePageState extends State<SeancePage> {
                         Navigator.pop(context);
                         var db = FirebaseFirestore.instance;
 
-                        var t = await db
-                            .collection("5dMzBRtLwNeCqScwT1yVuz0FGuG2")
-                            .add({
+                        var t = await db.collection(widget.uid).add({
                           'titre': _nameController.text,
                           'createdAt': Timestamp.now(),
                           'updatedAt': Timestamp.now(),

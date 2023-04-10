@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
                         (value) {
                           if (value != null) {
                             UserCredential userCredential = value;
-                            if (value.user!.emailVerified) {
+                            if (userCredential.user!.emailVerified) {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -140,14 +140,6 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               );
                             }
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (context) => SeancePage(
-                            //       uid: value.user.uid,
-                            //     ),
-                            //   ),
-                            // );
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(

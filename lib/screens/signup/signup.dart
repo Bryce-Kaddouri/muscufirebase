@@ -63,26 +63,25 @@ class SignupPage extends StatelessWidget {
                       _passwordController.text,
                     );
                     if (user != null) {
-                      DBFirebase().sendEmailVerification(user).then((value) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text('Signup'),
-                              content: const Text(
-                                  'Signup successful ! Un email de vérification vous a été envoyé.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: const Text('OK'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      });
+                      DBFirebase().sendEmailVerification(user);
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: const Text('Signup'),
+                            content: const Text(
+                                'Signup successful ! Un email de vérification vous a été envoyé.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
                     }
                   }
                 },
