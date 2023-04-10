@@ -41,9 +41,4 @@ class Exo {
       'timer': timer
     };
   }
-
-  @override
-  String toString() {
-    return 'Exo{docId: $docId, titre: $titre, poids: $poids, createdAt: $createdAt, updatedAt: $updatedAt, index: $index, nbRep: $nbRep, timer: $timer}';
-  }
 }

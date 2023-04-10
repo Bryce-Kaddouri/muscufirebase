@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 
+import '../../services/firebase.dart';
 import '../signin/signin.dart';
 import '../timer/timer.dart';
 
@@ -34,50 +35,9 @@ class _FocusSeanceState extends State<FocusSeance> {
 
   User? user = FirebaseAuth.instance.currentUser;
 
-  Future<bool> changeOrder(String idUser, String idSeance, String idExo,
-      int newIndex, int oldIndex) async {
-    var db = FirebaseFirestore.instance;
-
-    try {
-      var docRef = db
-          .collection(idUser)
-          .doc(idSeance)
-          .collection('exos')
-          .doc(idExo)
-          .update({'index': newIndex});
-      var docRef1 =
-          // db.collection(idUser).doc(idSeance).collection('exos').snapshots();
-          db
-              .collection(idUser)
-              .doc(idSeance)
-              .collection('exos')
-              .doc(idExo)
-              .update({'index': oldIndex});
-      return true;
-    } on FirebaseAuthException catch (e) {
-      print(e.code);
-      return false;
-    } catch (e) {
-      print(e);
-      return false;
-    }
-  }
-
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final TextEditingController min = TextEditingController();
   final TextEditingController sec = TextEditingController();
-
-  Stream<QuerySnapshot> getDocumentById(String idSeance, String idUser) {
-    var db = FirebaseFirestore.instance;
-    final docRef = db
-        .collection(idUser)
-        .doc(idSeance)
-        .collection('exos')
-        .orderBy('index')
-        .snapshots();
-
-    return docRef;
-  }
 
   Widget proxyDecorator(Widget child, int index, Animation<double> animation) {
     return AnimatedBuilder(
@@ -98,6 +58,7 @@ class _FocusSeanceState extends State<FocusSeance> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         actions: [
           IconButton(
               onPressed: () {
@@ -150,40 +111,34 @@ class _FocusSeanceState extends State<FocusSeance> {
                             int secS = int.parse(sec.text);
                             int totSec = 60 * minS + secS;
                             Navigator.pop(context);
-                            var db = FirebaseFirestore.instance;
                             String titre = "Repos";
                             int nbRep = 0;
                             int poids = 0;
 
-                            // recup exos
-                            var exos = await db
-                                .collection(user!.uid)
-                                .doc(widget.idSeance)
-                                .collection('exos')
-                                .get();
+                            var request = DBFirebase().addExo(
+                                titre, nbRep, poids, totSec, widget.idSeance);
 
-                            print('titre: ');
-                            print(titre);
-                            print('nbRep: ');
-                            print(nbRep);
-                            print('poids: ');
-                            print(poids);
-
-                            var t = await db
-                                .collection(user!.uid)
-                                .doc(widget.idSeance)
-                                .collection('exos')
-                                .add({
-                              'titre': titre,
-                              'index': exos.size + 1,
-                              'nbRep': nbRep,
-                              'poids': poids,
-                              'timer': totSec,
-                              'createdAt': Timestamp.now(),
-                              'updatedAt': Timestamp.now(),
-                            });
+                            if (request != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  closeIconColor: Colors.white,
+                                  backgroundColor: Colors.green,
+                                  showCloseIcon: true,
+                                  content: Text('Exercice ajouté'),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  closeIconColor: Colors.white,
+                                  backgroundColor: Colors.red,
+                                  showCloseIcon: true,
+                                  content: Text('Erreur'),
+                                ),
+                              );
+                            }
                           },
-                          child: Text('Ajouter'),
+                          child: const Text('Ajouter'),
                         ),
                       ],
                     );
@@ -196,82 +151,91 @@ class _FocusSeanceState extends State<FocusSeance> {
         Container(
           height: MediaQuery.of(context).size.height - 160,
           child: StreamBuilder<QuerySnapshot>(
-            stream: getDocumentById(widget.idSeance, user!.uid),
+            stream: DBFirebase().getExosBySeance(
+              widget.idSeance,
+            ),
             builder:
                 (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
               if (snapshot.hasError) {
-                return Text('Something went wrong');
+                return Column(
+                  children: [
+                    const Icon(Icons.error_outline,
+                        color: Colors.red, size: 60),
+                    const Text('Erreur'),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {});
+                      },
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                );
               }
 
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: CircularProgressIndicator());
               }
 
-              List<Widget> lstExos = [];
-              for (int index = 0;
-                  index < snapshot.data!.docs.length;
-                  index += 1) {
-                var date = snapshot.data!.docs[index].get('updatedAt');
-                var date2 = snapshot.data!.docs[index].get('createdAt');
-                // date au format jj-mm-aaaa hh:mm:ss
-                var date3 = date.toDate();
-                var date4 = date2.toDate();
-
-                lstExos.add(
-                  ListTile(
-                    tileColor: Colors.grey[900],
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    key: Key('$index'),
-                    title: Text(snapshot.data!.docs[index].get('titre'),
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 24)),
-                    subtitle: Text('modifié le : ${date3.toString()}',
-                        style: TextStyle(fontSize: 12)),
-                    leading: IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () async {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: Text('Supprimer'),
-                              content: Text(
-                                  'Voulez-vous vraiment supprimer cet exercice ?'),
-                              actions: [
-                                TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text('Annuler')),
-                                TextButton(
+              return ReorderableListView.builder(
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
+                  var date = snapshot.data!.docs[index].get('updatedAt');
+                  var date2 = snapshot.data!.docs[index].get('createdAt');
+                  // date au format jj-mm-aaaa hh:mm:ss
+                  var date3 = date.toDate();
+                  var date4 = date2.toDate();
+                  return Container(
+                    key: Key('cont$index'),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      tileColor: Colors.grey[900],
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      key: Key('$index'),
+                      title: Text(snapshot.data!.docs[index].get('titre'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 24)),
+                      subtitle: Text('modifié le : ${date3.toString()}',
+                          style: const TextStyle(fontSize: 12)),
+                      leading: IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: const Text('Supprimer'),
+                                content: const Text(
+                                    'Voulez-vous vraiment supprimer cet exercice ?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('Annuler')),
+                                  TextButton(
                                     onPressed: () async {
                                       Navigator.pop(context);
-                                      var db = FirebaseFirestore.instance;
-                                      await db
-                                          .collection(user!.uid)
-                                          .doc(widget.idSeance)
-                                          .collection('exos')
-                                          .doc(snapshot.data!.docs[index].id)
-                                          .delete();
+
+                                      DBFirebase().deleteExoById(
+                                          snapshot.data!.docs[index].id,
+                                          widget.idSeance);
                                       setState(() {});
                                     },
-                                    child: Text('Supprimer'))
-                              ],
-                            );
-                          },
-                        );
-                      },
+                                    child: const Text('Supprimer'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                );
-              }
-
-              return ReorderableListView(
+                  );
+                },
                 padding:
                     const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                 proxyDecorator: proxyDecorator,
-                children: lstExos,
                 onReorder: (int oldIndex, int newIndex) {
                   setState(() {
                     if (oldIndex > newIndex) {
@@ -334,6 +298,8 @@ class _FocusSeanceState extends State<FocusSeance> {
                       test.forEach((element) {
                         var db = FirebaseFirestore.instance;
                         int ind = element.get('index') - 1;
+                        DBFirebase().changeOrder(widget.id, widget.idSeance,
+                            element.id, newIndex, oldIndex);
                         final docRef = db
                             .collection(widget.id)
                             .doc(widget.idSeance)
@@ -343,8 +309,6 @@ class _FocusSeanceState extends State<FocusSeance> {
                       });
                     }
                     int ind = 0;
-                    changeOrder(widget.id, widget.idSeance,
-                        snapshot.data!.docs[oldIndex].id, newIndex, oldIndex);
                   });
                 },
               );
@@ -461,7 +425,7 @@ class _FocusSeanceState extends State<FocusSeance> {
           },
           elevation: 8,
           backgroundColor: Colors.red,
-          items: [
+          items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.skip_previous),
               label: 'Previous',

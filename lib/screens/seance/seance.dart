@@ -1,7 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../services/firebase.dart';
 import '../focus_seance/focus_seance.dart';
 import '../signin/signin.dart';
@@ -16,12 +14,13 @@ class SeancePage extends StatefulWidget {
 
 class _SeancePageState extends State<SeancePage> {
   final TextEditingController _nameController = TextEditingController();
-  User? user = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
-    final Stream<QuerySnapshot> usersStream =
-        FirebaseFirestore.instance.collection(widget.uid).snapshots();
+    final Stream<QuerySnapshot> usersStream = DBFirebase().getSeancesByUserId(
+      widget.uid,
+    );
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -132,10 +131,9 @@ class _SeancePageState extends State<SeancePage> {
                                           child: const Text('Annuler')),
                                       TextButton(
                                           onPressed: () {
-                                            FirebaseFirestore.instance
-                                                .collection(widget.uid)
-                                                .doc(doc.docs[index].id)
-                                                .delete();
+                                            DBFirebase().deleteSeanceById(
+                                                doc.docs[index].id);
+
                                             Navigator.pop(context);
                                             // show snackbar
                                             ScaffoldMessenger.of(context)
@@ -155,7 +153,7 @@ class _SeancePageState extends State<SeancePage> {
                                 },
                               );
                             },
-                            icon: Icon(Icons.delete, color: Colors.red)),
+                            icon: const Icon(Icons.delete, color: Colors.red)),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -163,7 +161,7 @@ class _SeancePageState extends State<SeancePage> {
                               builder: (context) => FocusSeance(
                                 id: widget.uid,
                                 idSeance: doc.docs[index].id,
-                                nameSeance: doc!.docs[index].get(('titre')),
+                                nameSeance: doc.docs[index].get(('titre')),
                               ),
                             ),
                           );
@@ -173,7 +171,7 @@ class _SeancePageState extends State<SeancePage> {
                         ),
                         subtitle: Text(dateFormated),
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                     ],
                   );
                 },
@@ -188,16 +186,16 @@ class _SeancePageState extends State<SeancePage> {
             context: context,
             builder: (context) {
               return AlertDialog(
-                title: Text('Ajouter une séance'),
+                title: const Text('Ajouter une séance'),
                 content: Container(
                   height: 200,
                   child: Form(
                     child: Column(
                       children: [
-                        Text('Saisir le nom de la séance'),
+                        const Text('Saisir le nom de la séance'),
                         TextFormField(
                           controller: _nameController,
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Titre',
                           ),
                         ),
@@ -210,31 +208,21 @@ class _SeancePageState extends State<SeancePage> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: Text('Annuler')),
+                      child: const Text('Annuler')),
                   TextButton(
                       onPressed: () async {
                         Navigator.pop(context);
-                        var db = FirebaseFirestore.instance;
-
-                        var t = await db.collection(widget.uid).add({
-                          'titre': _nameController.text,
-                          'createdAt': Timestamp.now(),
-                          'updatedAt': Timestamp.now(),
-                        });
-
-                        print('---------------------------------');
-                        print(t.toString());
-
-                        int nb = 0;
-                        setState(() {});
+                        DBFirebase().addSeance(
+                          _nameController.text,
+                        );
                       },
-                      child: Text('Ajouter'))
+                      child: const Text('Ajouter'))
                 ],
               );
             },
           );
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
