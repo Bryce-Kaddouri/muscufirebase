@@ -63,13 +63,14 @@ class SignupPage extends StatelessWidget {
                       _passwordController.text,
                     );
                     if (user != null) {
-                      if (DBFirebase().sendEmailVerification(user) != null) {
+                      DBFirebase().sendEmailVerification(user).then((value) {
                         showDialog(
                           context: context,
                           builder: (context) {
                             return AlertDialog(
                               title: const Text('Signup'),
-                              content: const Text('Signup successful !'),
+                              content: const Text(
+                                  'Signup successful ! Un email de vérification vous a été envoyé.'),
                               actions: [
                                 TextButton(
                                   onPressed: () {
@@ -81,25 +82,7 @@ class SignupPage extends StatelessWidget {
                             );
                           },
                         );
-                      }
-                    } else {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: const Text('Signup'),
-                            content: const Text('Signup failed !'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
+                      });
                     }
                   }
                 },
