@@ -39,14 +39,12 @@ class _FocusSeanceState extends State<FocusSeance> {
     var db = FirebaseFirestore.instance;
 
     try {
-      var docRef =
-          // db.collection(idUser).doc(idSeance).collection('exos').snapshots();
-          db
-              .collection(idUser)
-              .doc(idSeance)
-              .collection('exos')
-              .doc(idExo)
-              .update({'index': newIndex});
+      var docRef = db
+          .collection(idUser)
+          .doc(idSeance)
+          .collection('exos')
+          .doc(idExo)
+          .update({'index': newIndex});
       var docRef1 =
           // db.collection(idUser).doc(idSeance).collection('exos').snapshots();
           db
@@ -59,11 +57,6 @@ class _FocusSeanceState extends State<FocusSeance> {
     } on FirebaseAuthException catch (e) {
       print(e.code);
       return false;
-      // if (e.code == 'weak-password') {
-      //   print('The password provided is too weak.');
-      // } else if (e.code == 'email-already-in-use') {
-      //   print('The account already exists for that email.');
-      // }
     } catch (e) {
       print(e);
       return false;
@@ -74,17 +67,14 @@ class _FocusSeanceState extends State<FocusSeance> {
   final TextEditingController min = TextEditingController();
   final TextEditingController sec = TextEditingController();
 
-  // function to get a document from firestore collection by id
   Stream<QuerySnapshot> getDocumentById(String idSeance, String idUser) {
     var db = FirebaseFirestore.instance;
-    final docRef =
-        // db.collection(idUser).doc(idSeance).collection('exos').snapshots();
-        db
-            .collection(idUser)
-            .doc(idSeance)
-            .collection('exos')
-            .orderBy('index')
-            .snapshots();
+    final docRef = db
+        .collection(idUser)
+        .doc(idSeance)
+        .collection('exos')
+        .orderBy('index')
+        .snapshots();
 
     return docRef;
   }
@@ -112,10 +102,8 @@ class _FocusSeanceState extends State<FocusSeance> {
           IconButton(
               onPressed: () {
                 FirebaseAuth.instance.signOut();
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => LoginPage(title: 'exo Demo')));
+                Navigator.pushReplacement(context,
+                    MaterialPageRoute(builder: (context) => LoginPage()));
               },
               icon: Icon(Icons.logout))
         ],
@@ -124,18 +112,16 @@ class _FocusSeanceState extends State<FocusSeance> {
       body: Column(children: [
         Container(
           width: double.infinity,
-          margin: EdgeInsets.symmetric(horizontal: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 10),
           alignment: Alignment.centerRight,
           height: 40,
           child: ElevatedButton.icon(
               onPressed: () {
-                // global key
-
                 showDialog(
                   context: context,
                   builder: (context) {
                     return AlertDialog(
-                      title: Text('Ajouter un temps de repos'),
+                      title: const Text('Ajouter un temps de repos'),
                       content: Container(
                         height: 200,
                         child: Form(

@@ -1,95 +1,176 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:muscucards/services/firebase.dart';
 import '../seance/seance.dart';
+import '../signup/signup.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  const LoginPage({
+    super.key,
+  });
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
+  bool isLoading = false;
   @override
   Widget build(BuildContext context) {
-    // global key for the form
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-    // controller for email field
-    final TextEditingController _emailController = TextEditingController();
-    // controller for password field
-    final TextEditingController _passwordController = TextEditingController();
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+
     return Scaffold(
         appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
+          centerTitle: true,
+          title: const Text('Muscu App - Authentification'),
         ),
         body: Container(
+          color: Colors.grey[900],
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          margin: const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
           child: Form(
-            key: _formKey,
+            key: formKey,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                  ),
+                const Text('Authentification', style: TextStyle(fontSize: 40)),
+                const SizedBox(
+                  height: 60,
                 ),
                 TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red),
+                    ),
+                    focusColor: Colors.blue,
                   ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                TextFormField(
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
+                    }
+                    return null;
+                  },
+                  controller: passwordController,
+                  decoration: const InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.red),
+                    ),
+                    focusColor: Colors.blue,
+                  ),
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: Text('Mot de passe oublié ?'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SignupPage(),
+                      ),
+                    );
+                  },
+                  child: Text('Pas encore de compte ?'),
+                ),
+                const SizedBox(
+                  height: 50,
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: Size(200, 50),
+                  ),
                   onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      try {
-                        UserCredential userCredential = await FirebaseAuth
-                            .instance
-                            .signInWithEmailAndPassword(
-                                email: _emailController.text,
-                                password: _passwordController.text);
-                        print(userCredential);
-
-                        if (userCredential.user != null) {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
+                    setState(
+                      () {
+                        isLoading = true;
+                      },
+                    );
+                    if (formKey.currentState!.validate()) {
+                      DBFirebase()
+                          .login(emailController.text, passwordController.text)
+                          .then(
+                        (value) {
+                          if (value != null) {
+                            UserCredential userCredential = value;
+                            if (value.user!.emailVerified) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
                                   builder: (context) => SeancePage(
-                                        uid: userCredential.user!.uid,
-                                      )));
-                        }
-                      } on FirebaseAuthException catch (e) {
-                        if (e.code == 'weak-password') {
-                          print('The password provided is too weak.');
-                        } else if (e.code == 'email-already-in-use') {
-                          print('The account already exists for that email.');
-                        }
-                      } catch (e) {
-                        print(e);
-                      }
+                                    uid: value.user!.uid,
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text(
+                                    'Erreur: Email non vérifié !',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              );
+                            }
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (context) => SeancePage(
+                            //       uid: value.user.uid,
+                            //     ),
+                            //   ),
+                            // );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: Colors.red,
+                                content: Text(
+                                  'Erreur: Email ou Mot de passe incorrect !',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      );
                     }
+                    setState(() {
+                      isLoading = false;
+                    });
                   },
-                  child: Text('Register'),
+                  child: isLoading
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : const Text('Se connecter'),
                 ),
               ],
             ),
