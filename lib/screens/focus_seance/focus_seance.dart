@@ -321,7 +321,7 @@ class _FocusSeanceState extends State<FocusSeance> {
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog(
+              return AlertDialog( 
                 title: Text('Ajouter un exercice'),
                 content: Container(
                   height: 200,
