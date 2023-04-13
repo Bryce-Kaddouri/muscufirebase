@@ -62,8 +62,8 @@ class _TimerState extends State<Timer> {
               isTimerTextShown: true,
               autoStart: true,
               onStart: () {
-                debugPrint('Countdown Started');
-                TextToSpeach().speak('5... 4... 3... 2... 1...');
+                // debugPrint('Countdown Started');
+                // TextToSpeach().speak('5... 4... 3... 2... 1...');
               },
               onComplete: () {
                 debugPrint('Countdown Ended');

@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
-
 import '../../services/firebase.dart';
 import '../signin/signin.dart';
 import '../timer/timer.dart';
@@ -61,12 +60,13 @@ class _FocusSeanceState extends State<FocusSeance> {
         centerTitle: true,
         actions: [
           IconButton(
-              onPressed: () {
-                FirebaseAuth.instance.signOut();
-                Navigator.pushReplacement(context,
-                    MaterialPageRoute(builder: (context) => LoginPage()));
-              },
-              icon: Icon(Icons.logout))
+            onPressed: () {
+              FirebaseAuth.instance.signOut();
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()));
+            },
+            icon: const Icon(Icons.logout),
+          )
         ],
         title: Text(widget.nameSeance),
       ),
@@ -87,13 +87,171 @@ class _FocusSeanceState extends State<FocusSeance> {
                         height: 200,
                         child: Form(
                           key: formKey,
-                          child: Column(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              TextFormField(
-                                controller: min,
+                              Container(
+                                width: 100,
+                                child: TextFormField(
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      // verif int compris entre 0 et 59
+                                      return 'Veuillez renseigner ce champ';
+                                    } else {
+                                      // verif que c'est un int
+                                      try {
+                                        int.parse(value);
+                                        if (int.parse(value) > 59 ||
+                                            int.parse(value) < 0) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                iconColor: Colors.red,
+                                                icon: const Icon(
+                                                  Icons.error,
+                                                  size: 100,
+                                                ),
+                                                title: const Text('Erreur'),
+                                                content: const Text(
+                                                    'Veuillez renseigner un nombre entre 0 et 59'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: const Text('Ok'),
+                                                  )
+                                                ],
+                                              );
+                                            },
+                                          );
+                                          return '';
+                                        } else {
+                                          return null;
+                                        }
+                                      } catch (e) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return AlertDialog(
+                                              iconColor: Colors.red,
+                                              icon: const Icon(
+                                                Icons.error,
+                                                size: 100,
+                                              ),
+                                              title: const Text('Erreur'),
+                                              content: const Text(
+                                                  'Veuillez renseigner un nombre'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text('Ok'),
+                                                )
+                                              ],
+                                            );
+                                          },
+                                        );
+                                        return '';
+                                      }
+                                    }
+                                  },
+                                  controller: min,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Minutes',
+                                    border: OutlineInputBorder(),
+                                    fillColor: Colors.white,
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              TextFormField(
-                                controller: sec,
+                              const Text(' : '),
+                              Container(
+                                width: 100,
+                                child: TextFormField(
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      // verif int compris entre 0 et 59
+                                      return 'Veuillez renseigner ce champ';
+                                    } else {
+                                      // verif que c'est un int
+                                      try {
+                                        int.parse(value);
+                                        if (int.parse(value) > 59 ||
+                                            int.parse(value) < 0) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                iconColor: Colors.red,
+                                                icon: const Icon(
+                                                  Icons.error,
+                                                  size: 100,
+                                                ),
+                                                title: const Text('Erreur'),
+                                                content: const Text(
+                                                    'Veuillez renseigner un nombre entre 0 et 59'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: const Text('Ok'),
+                                                  )
+                                                ],
+                                              );
+                                            },
+                                          );
+                                          return '';
+                                        } else {
+                                          return null;
+                                        }
+                                      } catch (e) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return AlertDialog(
+                                              iconColor: Colors.red,
+                                              icon: const Icon(
+                                                Icons.error,
+                                                size: 100,
+                                              ),
+                                              title: const Text('Erreur'),
+                                              content: const Text(
+                                                  'Veuillez renseigner un nombre'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text('Ok'),
+                                                )
+                                              ],
+                                            );
+                                          },
+                                        );
+                                        return '';
+                                      }
+                                    }
+                                  },
+                                  controller: sec,
+                                  decoration: const InputDecoration(
+                                    fillColor: Colors.white,
+                                    labelText: 'Secondes',
+                                    border: OutlineInputBorder(),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: BorderSide(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               )
                             ],
                           ),
@@ -107,35 +265,64 @@ class _FocusSeanceState extends State<FocusSeance> {
                             child: Text('Annuler')),
                         TextButton(
                           onPressed: () async {
-                            int minS = int.parse(min.text);
-                            int secS = int.parse(sec.text);
-                            int totSec = 60 * minS + secS;
-                            Navigator.pop(context);
-                            String titre = "Repos";
-                            int nbRep = 0;
-                            int poids = 0;
+                            if (formKey.currentState!.validate()) {
+                              if (int.parse(min.text) == 0 &&
+                                  int.parse(sec.text) == 0) {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      iconColor: Colors.red,
+                                      icon: const Icon(
+                                        Icons.error,
+                                        size: 100,
+                                      ),
+                                      title: const Text('Erreur'),
+                                      content: const Text(
+                                          'Veuillez renseigner un temps de repos supérieur à 0'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text('Ok'),
+                                        )
+                                      ],
+                                    );
+                                  },
+                                );
+                              } else {
+                                int minS = int.parse(min.text);
+                                int secS = int.parse(sec.text);
+                                int totSec = 60 * minS + secS;
+                                Navigator.pop(context);
+                                String titre = "Repos";
+                                int nbRep = 0;
+                                int poids = 0;
 
-                            var request = DBFirebase().addExo(
-                                titre, nbRep, poids, totSec, widget.idSeance);
+                                var request = DBFirebase().addExo(titre, nbRep,
+                                    poids, totSec, widget.idSeance);
 
-                            if (request != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  closeIconColor: Colors.white,
-                                  backgroundColor: Colors.green,
-                                  showCloseIcon: true,
-                                  content: Text('Exercice ajouté'),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  closeIconColor: Colors.white,
-                                  backgroundColor: Colors.red,
-                                  showCloseIcon: true,
-                                  content: Text('Erreur'),
-                                ),
-                              );
+                                if (request != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      closeIconColor: Colors.white,
+                                      backgroundColor: Colors.green,
+                                      showCloseIcon: true,
+                                      content: Text('Exercice ajouté'),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      closeIconColor: Colors.white,
+                                      backgroundColor: Colors.red,
+                                      showCloseIcon: true,
+                                      content: Text('Erreur'),
+                                    ),
+                                  );
+                                }
+                              }
                             }
                           },
                           child: const Text('Ajouter'),
@@ -318,24 +505,52 @@ class _FocusSeanceState extends State<FocusSeance> {
       ]),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          RegExp regexInt = RegExp(r'^[0-9]+$');
+          RegExp regexString = RegExp(r'^[a-zA-Z]+$');
+
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog( 
+              return AlertDialog(
                 title: Text('Ajouter un exercice'),
                 content: Container(
-                  height: 200,
+                  constraints: const BoxConstraints(maxHeight: 250),
                   child: Form(
+                    key: _addFormKey,
                     child: Column(
                       children: [
                         Text('Saisir le nom de l\'exercice'),
                         TextFormField(
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez saisir un nom';
+                            } else {
+                              if (!regexString.hasMatch(value)) {
+                                return 'Veuillez saisir un nom valide';
+                              }
+                            }
+                            return null;
+                          },
                           controller: _nameController,
                           decoration: InputDecoration(
                             labelText: 'Titre',
                           ),
                         ),
                         TextFormField(
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez saisir un nombre de répétitions';
+                            } else {
+                              if (!regexInt.hasMatch(value)) {
+                                return 'Veuillez saisir un nombre de répétitions valide';
+                              } else {
+                                if (int.parse(value) <= 0) {
+                                  return 'Veuillez saisir un nombre de répétitions valide';
+                                }
+                              }
+                            }
+                            return null;
+                          },
                           controller: _nbRepController,
                           decoration: InputDecoration(
                             labelText: 'nb Rep',
@@ -343,6 +558,20 @@ class _FocusSeanceState extends State<FocusSeance> {
                         ),
                         TextFormField(
                           controller: _poidsController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Veuillez saisir un poids';
+                            } else {
+                              if (!regexInt.hasMatch(value)) {
+                                return 'Veuillez saisir un poids valide';
+                              } else {
+                                if (int.parse(value) <= 0) {
+                                  return 'Veuillez saisir un poids valide';
+                                }
+                              }
+                            }
+                            return null;
+                          },
                           decoration: InputDecoration(
                             labelText: 'poids',
                           ),
@@ -358,7 +587,8 @@ class _FocusSeanceState extends State<FocusSeance> {
                       },
                       child: Text('Annuler')),
                   TextButton(
-                      onPressed: () async {
+                    onPressed: () async {
+                      if (_addFormKey.currentState!.validate()) {
                         Navigator.pop(context);
                         var db = FirebaseFirestore.instance;
                         String titre = _nameController.text;
@@ -376,23 +606,21 @@ class _FocusSeanceState extends State<FocusSeance> {
                             .collection(user!.uid)
                             .doc(widget.idSeance)
                             .collection('exos')
-                            .add({
-                          'titre': titre,
-                          'index': exos.size + 1,
-                          'nbRep': nbRep,
-                          'poids': poids,
-                          'timer': 0,
-                          'createdAt': Timestamp.now(),
-                          'updatedAt': Timestamp.now(),
-                        });
-
-                        print('---------------------------------');
-                        print(t.toString());
-
-                        int nb = 0;
-                        // setState(() {});
-                      },
-                      child: Text('Ajouter'))
+                            .add(
+                          {
+                            'titre': titre,
+                            'index': exos.size + 1,
+                            'nbRep': nbRep,
+                            'poids': poids,
+                            'timer': 0,
+                            'createdAt': Timestamp.now(),
+                            'updatedAt': Timestamp.now(),
+                          },
+                        );
+                      }
+                    },
+                    child: Text('Ajouter'),
+                  )
                 ],
               );
             },

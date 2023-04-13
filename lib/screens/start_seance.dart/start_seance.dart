@@ -1,4 +1,5 @@
 // import 'package:flutter_tts/flutter_tts.dart';
+import 'package:muscucards/screens/start_seance.dart/repos_card.dart';
 import 'package:muscucards/services/textToSpeach.dart';
 import 'package:stacked_card_carousel/stacked_card_carousel.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:circular_countdown_timer/circular_countdown_timer.dart';
 
-import '../../component/counterdown.dart';
+import 'components/classical_card.dart';
 
 class StartSeanceScreen extends StatefulWidget {
   String idSeance;
@@ -36,7 +37,7 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
   List<CountDownController> controllerTimer = [];
   var nextPage = 1;
   int nb = 0;
-  List<Card> list = [];
+  List<Widget> list = [];
   PageController controller = PageController();
 
   @override
@@ -49,7 +50,6 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
     return Scaffold(
       appBar: AppBar(
           title: Text('Start Seance'),
-          // back return on FocusSeance
           automaticallyImplyLeading: false,
           leading: IconButton(
               onPressed: () {
@@ -60,8 +60,6 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: getDocumentById(widget.idSeance, widget.idUser),
         builder: (context, snapshot) {
-          print('datas start:');
-          print(snapshot.data);
           if (snapshot.hasError) {
             return Text('Something went wrong');
           }
@@ -74,122 +72,73 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
 
           List tets =
               snapshot.data!.docs.toList().map((e) => e.data()).toList();
-          print('test size');
-          print(tets.length);
 
-          tets.forEach((element) {
-            print('test forEach');
-            print(element);
-            var titre = element['titre'];
+          if (tets.elementAt(0)['timer'] == 0) {
+            TextToSpeach().speak(
+                '${tets.elementAt(0)['titre']}, ${tets.elementAt(0)['nbRep']} répétitions à ${tets.elementAt(0)['poids']} Kilo');
+          } else {
+            TextToSpeach().speak(
+                '${tets.elementAt(0)['titre']} de ${tets.elementAt(0)['timer']} secondes');
+          }
+          tets.forEach(
+            (element) {
+              var titre = element['titre'];
+              var timer = element['timer'];
+              var poids = element['poids'];
+              var nbRep = element['nbRep'];
 
-            var timer = element['timer'];
-            var poids = element['poids'];
-            var nbRep = element['nbRep'];
+              late Widget card;
 
-            late Card card;
+              if (timer == 0) {
+                card = ClassicalCard(
+                  titre: titre,
+                  nbRep: nbRep,
+                  poids: poids,
+                );
+              } else {
+                controllerTimer.add(CountDownController());
 
-            if (timer == 0) {
-              card = Card(
-                color: Colors.white,
-                elevation: 4.0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: <Widget>[
-                      Container(
-                        color: Colors.blue,
-                        width: 300,
-                        child: Text(
-                          titre,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black, fontSize: 32),
-                        ),
-                      ),
-                      FlutterLogo(size: 300),
-                      Text(
-                        '$nbRep répétitions à $poids KG',
-                        style: TextStyle(color: Colors.black, fontSize: 24),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            } else {
-              controllerTimer.add(CountDownController());
+                card = ReposCard(
+                    titre: titre,
+                    controller: controllerTimer[indexList],
+                    onComplete: () {
+                      int size = controllerTimer.length;
 
-              card = Card(
-                color: Colors.white,
-                elevation: 4.0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Container(
-                        color: Colors.blue,
-                        width: 300,
-                        child: Text(
-                          titre,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headline4,
-                        ),
-                      ),
-                      Container(
-                        width: 300,
-                        height: 300,
-                        child: CounterDown(
-                            onComplete: () {
-                              int size = controllerTimer.length;
-                              print('size');
-                              print(nextPage);
-                              if (nextPage < size - 1) {
-                                controller.nextPage(
-                                    duration: Duration(seconds: 1),
-                                    curve: Curves.ease);
-                                nextPage++;
-                              } else {
-                                print('last');
-                                // speak(
-                                //     'Bravo ! Vous avec terminé cette séance !');
-                                showDialog(
-                                    barrierDismissible: false,
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        title: Text('Bravo'),
-                                        content: Text(
-                                            'Vous avez terminé votre séance'),
-                                        actions: [
-                                          TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                Navigator.pop(context);
-                                                Navigator.pop(context);
-                                              },
-                                              child: Text('Retour'))
-                                        ],
-                                      );
-                                    });
-                              }
-                            },
-                            idCard: 1,
-                            currentPage: currentCard,
-                            autoStart: false,
-                            controller: controllerTimer[indexList],
-                            idSeance: '',
-                            idUser: widget.idUser,
-                            timer: timer),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+                      if (nextPage < size - 1) {
+                        controller.nextPage(
+                            duration: Duration(seconds: 1), curve: Curves.ease);
+                        nextPage++;
+                      } else {
+                        showDialog(
+                          barrierDismissible: false,
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text('Bravo'),
+                              content: Text('Vous avez terminé votre séance'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                    },
+                                    child: Text('Retour'))
+                              ],
+                            );
+                          },
+                        );
+                      }
+                    },
+                    currentCard: currentCard,
+                    timer: timer,
+                    idUser: widget.idUser);
 
-              // nb++;
-              indexList++;
-            }
-            list.add(card);
-          });
+                indexList++;
+              }
+              list.add(card);
+            },
+          );
 
           return StackedCardCarousel(
             type: StackedCardCarouselType.cardsStack,
@@ -207,9 +156,11 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                 TextToSpeach()
                     .speak(
                         '${docs.elementAt(pageIndex)['timer']} secondes de repos')
-                    .then((value) {
-                  controllerTimer.elementAt(nbTimerPrevious).start();
-                });
+                    .then(
+                  (value) {
+                    controllerTimer.elementAt(nbTimerPrevious).start();
+                  },
+                );
                 print('nbTimerPrevious');
 
                 print(nbTimerPrevious);
