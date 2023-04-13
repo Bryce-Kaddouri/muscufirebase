@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class DBFirebase {
   // function to get tu current user
   FirebaseAuth auth = FirebaseAuth.instance;
+  FirebaseFirestore db = FirebaseFirestore.instance;
 
   Future signup(String email, String password) async {
     try {
@@ -168,8 +169,36 @@ class DBFirebase {
 
   changeOrder(String idUser, String idSeance, String idExo, int newIndex,
       int oldIndex) {
-    var db = FirebaseFirestore.instance;
+    try {
+      final docRef = db
+          .collection(idUser)
+          .doc(idSeance)
+          .collection('exos')
+          .doc(idExo)
+          .update({"index": newIndex});
+      // var docRef = db
+      //     .collection(idUser)
+      //     .doc(idSeance)
+      //     .collection('exos')
+      //     .doc(idExo)
+      //     .update({'index': newIndex});
+      // var docRef1 = db
+      //     .collection(idUser)
+      //     .doc(idSeance)
+      //     .collection('exos')
+      //     .doc(idExo)
+      //     .update({'index': oldIndex});
+      return true;
+    } on FirebaseAuthException catch (e) {
+      print(e.code);
+      return false;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
 
+  updateIndexExo(String idUser, String idSeance, String idExo, int newIndex) {
     try {
       var docRef = db
           .collection(idUser)
@@ -177,12 +206,6 @@ class DBFirebase {
           .collection('exos')
           .doc(idExo)
           .update({'index': newIndex});
-      var docRef1 = db
-          .collection(idUser)
-          .doc(idSeance)
-          .collection('exos')
-          .doc(idExo)
-          .update({'index': oldIndex});
       return true;
     } on FirebaseAuthException catch (e) {
       print(e.code);

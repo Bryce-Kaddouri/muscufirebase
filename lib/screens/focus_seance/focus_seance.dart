@@ -366,11 +366,10 @@ class _FocusSeanceState extends State<FocusSeance> {
               return ReorderableListView.builder(
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
-                  var date = snapshot.data!.docs[index].get('updatedAt');
-                  var date2 = snapshot.data!.docs[index].get('createdAt');
-                  // date au format jj-mm-aaaa hh:mm:ss
-                  var date3 = date.toDate();
-                  var date4 = date2.toDate();
+                  var getUpdate = snapshot.data!.docs[index].get('updatedAt');
+                  var getCreate = snapshot.data!.docs[index].get('createdAt');
+                  var dateUpdate = getUpdate.toDate();
+                  var dateCreate = getCreate.toDate();
                   return Container(
                     key: Key('cont$index'),
                     margin: const EdgeInsets.only(bottom: 10),
@@ -382,8 +381,10 @@ class _FocusSeanceState extends State<FocusSeance> {
                       title: Text(snapshot.data!.docs[index].get('titre'),
                           style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 24)),
-                      subtitle: Text('modifié le : ${date3.toString()}',
-                          style: const TextStyle(fontSize: 12)),
+                      subtitle: Text(
+                        'modifié le : ${dateUpdate.toString()}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       leading: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () async {
@@ -423,80 +424,38 @@ class _FocusSeanceState extends State<FocusSeance> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                 proxyDecorator: proxyDecorator,
-                onReorder: (int oldIndex, int newIndex) {
-                  setState(() {
-                    if (oldIndex > newIndex) {
-                      var test =
-                          snapshot.data!.docs.getRange(newIndex, oldIndex);
-                      test.forEach((element) {
-                        var db = FirebaseFirestore.instance;
-                        int ind = element.get('index') + 1;
-                        final docRef = db
-                            .collection(widget.id)
-                            .doc(widget.idSeance)
-                            .collection('exos')
-                            .doc(element.id)
-                            .update({"index": ind});
-                      });
-                    } else if (newIndex == snapshot.data!.docs.length) {
-                      var test = snapshot.data!.docs.getRange(0, newIndex);
-                      var db = FirebaseFirestore.instance;
-                      final docRef = db
-                          .collection(widget.id)
-                          .doc(widget.idSeance)
-                          .collection('exos')
-                          .doc(snapshot.data!.docs[oldIndex].id)
-                          .update({"index": newIndex});
+                onReorder: (int from, int to) {
+                  bool fromIsGreat = from > to ? true : false;
 
-                      test.forEach((element) {
-                        int ind = element.get('index') - 1;
-                        final docRef = db
-                            .collection(widget.id)
-                            .doc(widget.idSeance)
-                            .collection('exos')
-                            .doc(element.id)
-                            .update({"index": ind});
-                      });
-                    } else if (newIndex == 0) {
-                      print(newIndex);
-                      var test = snapshot.data!.docs
-                          .getRange(1, snapshot.data!.docs.length);
-                      var db = FirebaseFirestore.instance;
-                      final docRef = db
-                          .collection(widget.id)
-                          .doc(widget.idSeance)
-                          .collection('exos')
-                          .doc(snapshot.data!.docs[oldIndex].id)
-                          .update({"index": newIndex});
-
-                      test.forEach((element) {
-                        int ind = element.get('index') + 1;
-                        final docRef = db
-                            .collection(widget.id)
-                            .doc(widget.idSeance)
-                            .collection('exos')
-                            .doc(element.id)
-                            .update({"index": ind});
-                      });
-                    } else {
-                      print('descente');
-                      var test =
-                          snapshot.data!.docs.getRange(oldIndex, newIndex);
-                      test.forEach((element) {
-                        var db = FirebaseFirestore.instance;
-                        int ind = element.get('index') - 1;
-                        DBFirebase().changeOrder(widget.id, widget.idSeance,
-                            element.id, newIndex, oldIndex);
-                        final docRef = db
-                            .collection(widget.id)
-                            .doc(widget.idSeance)
-                            .collection('exos')
-                            .doc(element.id)
-                            .update({"index": ind});
-                      });
+                  if (fromIsGreat) {
+                    for (var i = to; i < snapshot.data!.docs.length; i++) {
+                      if (i == to) {
+                        String idExo = snapshot.data!.docs[from].id;
+                        DBFirebase().updateIndexExo(
+                            user!.uid, widget.idSeance, idExo, i);
+                      }
+                      if (i != from) {
+                        String idExo = snapshot.data!.docs[i].id;
+                        DBFirebase().updateIndexExo(
+                            user!.uid, widget.idSeance, idExo, i + 1);
+                      }
                     }
-                    int ind = 0;
-                  });
+                    setState(() {});
+                  } else {
+                    for (var i = 0; i < to; i++) {
+                      if (i == from) {
+                        String idExo = snapshot.data!.docs[from].id;
+                        DBFirebase().updateIndexExo(
+                            user!.uid, widget.idSeance, idExo, to - 1);
+                      }
+                      if (i != from) {
+                        String idExo = snapshot.data!.docs[i].id;
+
+                        DBFirebase().updateIndexExo(
+                            user!.uid, widget.idSeance, idExo, i);
+                      }
+                    }
+                  }
                 },
               );
             },
@@ -518,6 +477,7 @@ class _FocusSeanceState extends State<FocusSeance> {
                   child: Form(
                     key: _addFormKey,
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Saisir le nom de l\'exercice'),
                         TextFormField(
