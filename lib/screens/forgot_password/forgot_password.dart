@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'components/form_forgor.dart';
+import 'components/form_forgot.dart';
 
 class ForgotPage extends StatefulWidget {
   const ForgotPage({
@@ -17,7 +17,6 @@ class _ForgotPageState extends State<ForgotPage> {
   Widget build(BuildContext context) {
     final GlobalKey<FormState> formKey = GlobalKey<FormState>();
     final TextEditingController emailController = TextEditingController();
-    final TextEditingController passwordController = TextEditingController();
 
     return Scaffold(
       appBar: AppBar(

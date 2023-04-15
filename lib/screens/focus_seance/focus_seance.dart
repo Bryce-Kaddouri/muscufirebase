@@ -12,12 +12,16 @@ class FocusSeance extends StatefulWidget {
   final String id;
   final String idSeance;
   final String nameSeance;
+  final int currentIndex;
+  final int nbMax;
 
   FocusSeance({
     super.key,
     required this.id,
     required this.idSeance,
     required this.nameSeance,
+    required this.currentIndex,
+    required this.nbMax,
   });
 
   @override
@@ -588,48 +592,99 @@ class _FocusSeanceState extends State<FocusSeance> {
         },
         child: Icon(Icons.add),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-          currentIndex: 1,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.white,
-          unselectedLabelStyle: TextStyle(color: Colors.white),
-          selectedLabelStyle: TextStyle(color: Colors.blue),
-          onTap: (value) {
-            final int _duration = 10;
-            final CountDownController _controller = CountDownController();
-            print(value);
-            if (value == 1) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Timer(
-                    timer: 5,
-                    idUser: widget.id,
-                    idSeance: widget.idSeance,
-                  ),
+      bottomNavigationBar:
+
+          // bottom navigiation bar avec bouton next disable si current index = nb max
+          BottomNavigationBar(
+        currentIndex: 1,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.white,
+        unselectedLabelStyle: TextStyle(color: Colors.white),
+        selectedLabelStyle: TextStyle(color: Colors.blue),
+        onTap: (value) async {
+          if (value == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Timer(
+                  timer: 5,
+                  idUser: widget.id,
+                  idSeance: widget.idSeance,
                 ),
+              ),
+            );
+          } else if (value == 0) {
+            print(widget.currentIndex);
+            if (widget.currentIndex > 0 && widget.currentIndex < widget.nbMax) {
+              int previousIndex =
+                  widget.currentIndex > 0 ? widget.currentIndex - 1 : 0;
+              print(previousIndex);
+              await DBFirebase()
+                  .getPreviousSeanceWithNextId(widget.currentIndex)
+                  .then(
+                    (value) => {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FocusSeance(
+                            id: widget.id,
+                            idSeance: value.id,
+                            nameSeance: value.get('titre'),
+                            currentIndex: previousIndex,
+                            nbMax: widget.nbMax,
+                          ),
+                        ),
+                      ),
+                    },
+                  );
+            }
+          } else if (value == 2) {
+            if (widget.currentIndex < widget.nbMax - 1) {
+              await DBFirebase()
+                  .getNextSeanceWithPreviousId(widget.currentIndex)
+                  .then(
+                (value) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FocusSeance(
+                        id: widget.id,
+                        idSeance: value.id,
+                        nameSeance: value.get('titre'),
+                        currentIndex: widget.currentIndex + 1,
+                        nbMax: widget.nbMax,
+                      ),
+                    ),
+                  );
+                },
               );
             }
-          },
-          elevation: 8,
-          backgroundColor: Colors.red,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.skip_previous),
-              label: 'Previous',
+          }
+        },
+        elevation: 8,
+        backgroundColor: Colors.red,
+        items: [
+          BottomNavigationBarItem(
+            icon: widget.currentIndex == 0
+                ? Icon(Icons.skip_previous, color: Colors.grey)
+                : Icon(Icons.skip_previous),
+            label: 'Previous',
+          ),
+          BottomNavigationBarItem(
+            activeIcon: Icon(
+              Icons.play_arrow,
             ),
-            BottomNavigationBarItem(
-              activeIcon: Icon(
-                Icons.play_arrow,
-              ),
-              icon: Icon(Icons.pause),
-              label: 'Play',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.skip_next),
-              label: 'Next',
-            ),
-          ]),
+            icon: Icon(Icons.pause),
+            label: 'Play',
+          ),
+          BottomNavigationBarItem(
+            icon: widget.currentIndex == widget.nbMax - 1
+                ? Icon(Icons.skip_next, color: Colors.grey)
+                : Icon(Icons.skip_next),
+            label: 'Next',
+          ),
+        ],
+      ),
     );
   }
 }

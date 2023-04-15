@@ -118,12 +118,13 @@ class _StartSeanceScreenState extends State<StartSeanceScreen> {
                               content: Text('Vous avez terminé votre séance'),
                               actions: [
                                 TextButton(
-                                    onPressed: () {
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                    },
-                                    child: Text('Retour'))
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text('Retour'),
+                                )
                               ],
                             );
                           },

@@ -44,6 +44,81 @@ class DBFirebase {
     }
   }
 
+  bool startSeance(String idSeance) {
+    User? user = auth.currentUser;
+    if (user != null) {
+      try {
+        FirebaseFirestore.instance
+            .collection(user.uid)
+            .doc(idSeance)
+            .collection('historique')
+            .add({
+          'createdAt': Timestamp.now(),
+        });
+        return true;
+      } on FirebaseAuthException catch (e) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  bool stopSeance(String idSeance) {
+    User? user = auth.currentUser;
+    if (user != null) {
+      try {
+        FirebaseFirestore.instance
+            .collection(user.uid)
+            .doc(idSeance)
+            .collection('historique')
+            .add({
+          'updatedAt': Timestamp.now(),
+        });
+        return true;
+      } on FirebaseAuthException catch (e) {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  getNextSeanceWithPreviousId(int index) {
+    print('index : $index');
+    User? user = auth.currentUser;
+    if (user != null) {
+      var datas = FirebaseFirestore.instance
+          .collection(user.uid)
+          .orderBy('createdAt')
+          .get();
+
+      return datas.then((value) {
+        if (index > value.docs.length - 1) {
+          return false;
+        } else {
+          return value.docs[index + 1];
+        }
+      });
+    }
+  }
+
+  getPreviousSeanceWithNextId(int index) async {
+    User? user = auth.currentUser;
+    if (user != null) {
+      var datas = await FirebaseFirestore.instance
+          .collection(user.uid)
+          .orderBy('createdAt')
+          .get();
+
+      if (index == 0) {
+        return false;
+      } else {
+        return datas.docs[index - 1];
+      }
+    }
+  }
+
   Future login(String email, String password) async {
     try {
       UserCredential userCredential = await auth.signInWithEmailAndPassword(
@@ -76,7 +151,10 @@ class DBFirebase {
 
   // function to get user uid
   getSeancesByUserId(String uid) {
-    return FirebaseFirestore.instance.collection(uid).snapshots();
+    return FirebaseFirestore.instance
+        .collection(uid)
+        .orderBy('createdAt')
+        .snapshots();
   }
 
   deleteSeanceById(String id) {
