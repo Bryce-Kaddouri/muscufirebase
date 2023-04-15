@@ -92,7 +92,7 @@ class _FormLoginState extends State<FormLogin> {
                 focusColor: Colors.blue,
                 suffixIcon: IconButton(
                   icon: Icon(
-                    Icons.remove_red_eye,
+                    passwordVisible ? Icons.visibility_off : Icons.visibility,
                     color: Colors.grey,
                   ),
                   onPressed: () {
