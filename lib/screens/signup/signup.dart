@@ -1,6 +1,6 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:muscucards/services/firebase.dart';
+
+import 'components/form_signup.dart';
 
 class SignupPage extends StatelessWidget {
   SignupPage({super.key});
@@ -18,78 +18,10 @@ class SignupPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Signup'),
       ),
-      body: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    UserCredential user = await DBFirebase().signup(
-                      _emailController.text,
-                      _passwordController.text,
-                    );
-                    if (user != null) {
-                      DBFirebase().sendEmailVerification(user);
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: const Text('Signup'),
-                            content: const Text(
-                                'Signup successful ! Un email de vérification vous a été envoyé.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    }
-                  }
-                },
-                child: const Text('Signup'),
-              ),
-            ],
-          ),
-        ),
+      body: FormSignup(
+        emailController: _emailController,
+        passwordController: _passwordController,
+        formKey: _formKey,
       ),
     );
   }

@@ -6,15 +6,16 @@ class DBFirebase {
   FirebaseAuth auth = FirebaseAuth.instance;
   FirebaseFirestore db = FirebaseFirestore.instance;
 
-  Future signup(String email, String password) async {
+  Future<bool> signup(String email, String password) async {
     try {
       UserCredential userCredential = await auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential;
+      DBFirebase().sendEmailVerification(userCredential);
+      return true;
     } on FirebaseAuthException catch (e) {
-      return null;
+      return false;
     }
   }
 

@@ -30,16 +30,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Musclor App',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
       home: FutureBuilder(
         future: _getUser(),
         builder: (context, snapshot) {
           // if current user exist : redirect into SeancePage
           // else : redirect into LoginPage
+
           if (snapshot.hasData) {
-            return SeancePage(
-              uid: snapshot.data!.uid,
-            );
+            if (snapshot.data.emailVerified) {
+              return SeancePage(
+                uid: snapshot.data!.uid,
+              );
+            } else {
+              return const LoginPage();
+            }
           } else {
             return const LoginPage();
           }

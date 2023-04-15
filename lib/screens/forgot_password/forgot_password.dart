@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'components/form_login.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({
+import 'components/form_forgor.dart';
+
+class ForgotPage extends StatefulWidget {
+  const ForgotPage({
     super.key,
   });
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<ForgotPage> createState() => _ForgotPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _ForgotPageState extends State<ForgotPage> {
   bool isLoading = false;
   @override
   Widget build(BuildContext context) {
@@ -21,12 +22,11 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Muscu App - Authentification'),
+        title: const Text('Muscu App - Mot de passe oublié'),
       ),
-      body: FormLogin(
+      body: FormForgotPassword(
         emailController: emailController,
         formKey: formKey,
-        passwordController: passwordController,
       ),
     );
   }
